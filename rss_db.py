@@ -1,4 +1,6 @@
 import psycopg2
+from rss_parser import RSSParser
+import requests
 
 conn = psycopg2.connect(database="postgres",
                         host="localhost",
@@ -25,6 +27,7 @@ if not cursor.fetchone()[0]:
         interval       interval     default interval '12 hours' not null,
         last_completed timestamp(0) default NOW()               not null,
         last_update    timestamp(0) default NOW()               not null,
+        last_post_id   varchar(255)                             not null,
     
         next_run timestamp(0) generated always as ( last_completed + interval ) stored
     );
@@ -54,5 +57,7 @@ if not cursor.fetchone()[0]:
     """)
     cursor.close()
     conn.commit()
-else:
-    print("table already exists")
+
+
+def add_feed(rss_url: str):
+    pass
