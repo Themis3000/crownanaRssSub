@@ -15,24 +15,25 @@ if not cursor.fetchone()[0]:
     cursor.execute("""
     create table feeds
     (
-        feed_id        serial                     not null
+        feed_id        serial                                   not null
             constraint feeds_pk
                 primary key,
-        config_url     varchar(2000)              not null
-            constraint config_url_key
+        rss_url        varchar(2000)                            not null
+            constraint rss_url_key
                 unique,
-        addition_date  timestamp(0) default NOW() not null,
-        interval       integer      default 43200 not null,
-        last_completed integer      default 0     not null,
+        addition_date  timestamp(0) default NOW()               not null,
+        interval       interval     default interval '12 hours' not null,
+        last_completed timestamp(0) default NOW()               not null,
+        last_update    timestamp(0) default NOW()               not null,
     
-        next_run integer generated always as ( last_completed + interval ) stored
+        next_run timestamp(0) generated always as ( last_completed + interval ) stored
     );
     
     create index next_run_index
-        on feeds (next_run);
+        on feeds (next_run desc);
     
-    create index config_url_index
-        on feeds (config_url);
+    create index rss_url_index
+        on feeds (rss_url);
     """)
     cursor.close()
     conn.commit()
