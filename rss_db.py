@@ -28,6 +28,7 @@ if not cursor.fetchone()[0]:
         last_completed timestamp(0) default NOW()               not null,
         last_update    timestamp(0) default NOW()               not null,
         last_post_id   varchar(255)                             not null,
+        last_post_pub  timestamp(0) default NOW()               not null,
     
         next_run timestamp(0) generated always as ( last_completed + interval ) stored
     );

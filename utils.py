@@ -3,6 +3,8 @@ import requests
 import dataclasses
 from typing import List
 import hashlib
+import email.utils
+from datetime import datetime
 
 
 @dataclasses.dataclass()
@@ -22,6 +24,15 @@ class RssPost:
         post_hash.update(unique_data.encode("utf-8"))
         return post_hash.hexdigest()
 
+    def get_datetime(self) -> datetime:
+        try:
+            date = email.utils.parsedate_to_datetime(self.date)
+        except ValueError:
+            # Raised when date format does not conform to rfc822
+            # In the future, find some soft way to deal with this that doesn't involve raising an exception.
+            raise
+        return date
+
 
 @dataclasses.dataclass()
 class RssUpdates:
@@ -29,8 +40,8 @@ class RssUpdates:
     rss_posts: List[RssPost]
 
 
-#TODO what if a post is deleted? Do some sort of date check
-def get_posts(rss_url: str, last_id: str = None) -> RssUpdates | None:
+def get_posts(
+        rss_url: str, last_id: str = None, last_date: datetime = datetime(year=0, month=0, day=0)) -> RssUpdates | None:
     """Fetches all new posts up to the last known post id"""
     try:
         response = requests.get(rss_url)
@@ -49,7 +60,9 @@ def get_posts(rss_url: str, last_id: str = None) -> RssUpdates | None:
             link=item.links[0].content,
             guid=item.guid.content if item.guid else None
         )
-        if post.post_id == last_id:
+        if last_date > post.get_datetime():
+            break
+        if post.post_id == last_id:  # Just in case the most recent post had its pub time changed (edits made to it?)
             break
         rss_posts.append(post)
 
