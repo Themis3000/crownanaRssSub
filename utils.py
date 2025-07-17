@@ -40,8 +40,8 @@ class RssUpdates:
     rss_posts: List[RssPost]
 
 
-def get_posts(
-        rss_url: str, last_id: str = None, last_date: datetime = datetime(year=0, month=0, day=0)) -> RssUpdates | None:
+def get_posts(rss_url: str, last_id: str = None,
+              last_date: datetime = datetime(year=1980, month=1, day=1)) -> RssUpdates | None:
     """Fetches all new posts up to the last known post id"""
     try:
         response = requests.get(rss_url)
