@@ -28,7 +28,7 @@ class RssTests(unittest.TestCase):
         cls.http_process.join()
 
     def setUp(self):
-        cursor = rss_db.conn.cursor()
+        cursor = rss_db.conn.setup_cursor()
         cursor.execute("""
             DROP SCHEMA public CASCADE;
             CREATE SCHEMA public;
