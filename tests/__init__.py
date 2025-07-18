@@ -3,6 +3,7 @@ from utils import get_posts
 from multiprocessing import Process
 import os
 import email.utils
+import rss_db
 
 
 def start_http():
@@ -25,6 +26,18 @@ class RssTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.http_process.terminate()
         cls.http_process.join()
+
+    def setUp(self):
+        cursor = rss_db.conn.cursor()
+        cursor.execute("""
+            DROP SCHEMA public CASCADE;
+            CREATE SCHEMA public;
+            GRANT ALL ON SCHEMA public TO postgres;
+            GRANT ALL ON SCHEMA public TO public;
+            COMMENT ON SCHEMA public IS 'standard public schema';
+        """)
+        cursor.close()
+        rss_db.conn.commit()
 
     def test_get_all_feed1_posts(self):
         posts = get_posts("http://127.0.0.1:8010/feed1.xml")

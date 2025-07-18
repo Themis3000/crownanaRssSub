@@ -1,12 +1,12 @@
 import psycopg2
 from rss_parser import RSSParser
-import requests
+import os
 
-conn = psycopg2.connect(database="postgres",
-                        host="localhost",
-                        user="postgres",
-                        password="postgres",
-                        port=5432)
+conn = psycopg2.connect(database=os.environ["database"],
+                        host=os.environ["host"],
+                        user=os.environ["user"],
+                        password=os.environ["password"],
+                        port=int(os.environ["port"]))
 
 cursor = conn.cursor()
 cursor.execute("""
