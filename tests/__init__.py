@@ -39,26 +39,39 @@ class RssTests(unittest.TestCase):
         self.assertEqual(len(posts.rss_posts), 1)
 
     def test_feed1_no_new_post(self):
-        newest_post_id = "6c87aa676f44b6cc2dffd176c775263572e523c5"
-        newest_post_date = email.utils.parsedate_to_datetime("Mon, 30 Jun 2025 23:00:00 -0600")
-        posts = get_posts("http://127.0.0.1:8010/feed1.xml", newest_post_id, newest_post_date)
+        post_id = "6c87aa676f44b6cc2dffd176c775263572e523c5"
+        post_date = email.utils.parsedate_to_datetime("Mon, 30 Jun 2025 23:00:00 -0600")
+        posts = get_posts("http://127.0.0.1:8010/feed1.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 0)
 
     def test_feed1_2_new_post(self):
-        newest_post_id = "80c0f3f8ff360b14b2ea9a617b290827efbb94dc"
-        newest_post_date = email.utils.parsedate_to_datetime("Tue, 27 May 2025 23:00:00 -0600")
-        posts = get_posts("http://127.0.0.1:8010/feed1.xml", newest_post_id, newest_post_date)
+        post_id = "80c0f3f8ff360b14b2ea9a617b290827efbb94dc"
+        post_date = email.utils.parsedate_to_datetime("Tue, 27 May 2025 23:00:00 -0600")
+        posts = get_posts("http://127.0.0.1:8010/feed1.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 2)
         self.assertEqual(posts.rss_posts[0].title, "Blog updates")
         self.assertEqual(posts.rss_posts[1].title, "Using photos in Freecad")
 
     def test_feed1_deleted_post(self):
-        newest_post_id = "--invalid id not used by any post--"
-        newest_post_date = email.utils.parsedate_to_datetime("Mon, 14 July 2025 23:00:00 -0600")
-        posts = get_posts("http://127.0.0.1:8010/feed1.xml", newest_post_id, newest_post_date)
+        post_id = "--invalid id not used by any post--"
+        post_date = email.utils.parsedate_to_datetime("Mon, 14 July 2025 23:00:00 -0600")
+        posts = get_posts("http://127.0.0.1:8010/feed1.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 0)
 
     def test_get_all_feed2_posts(self):
         posts = get_posts("http://127.0.0.1:8010/feed2.xml")
         self.assertEqual(posts.rss_posts[0].title, "7/12/25")
         self.assertEqual(len(posts.rss_posts), 10)
+
+    def test_feed2_get_1_new_post(self):
+        post_id = "c1a43f870c6f924141ff18b6138f503ddcdb75f7"
+        post_date = email.utils.parsedate_to_datetime("Sun, 13 Jul 2025 04:00:53 +0000")
+        posts = get_posts("http://127.0.0.1:8010/feed2.xml", post_id, post_date)
+        self.assertEqual(posts.rss_posts[0].title, "7/12/25")
+        self.assertEqual(len(posts.rss_posts), 1)
+
+    def test_feed2_no_new_post(self):
+        post_id = "92b220bab408cb4d3e4f0b8b788139df4845cfb5"
+        post_date = email.utils.parsedate_to_datetime("Sun, 13 Jul 2025 04:08:07 +0000")
+        posts = get_posts("http://127.0.0.1:8010/feed2.xml", post_id, post_date)
+        self.assertEqual(len(posts.rss_posts), 0)
