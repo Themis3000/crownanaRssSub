@@ -4,7 +4,7 @@ import dataclasses
 from typing import List
 import hashlib
 import email.utils
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclasses.dataclass()
@@ -41,7 +41,7 @@ class RssUpdates:
 
 
 def get_posts(rss_url: str, last_id: str = None,
-              last_date: datetime = datetime(year=1980, month=1, day=1)) -> RssUpdates | None:
+              last_date: datetime = datetime(year=1980, month=1, day=1, tzinfo=timezone.utc)) -> RssUpdates | None:
     """Fetches all new posts up to the last known post id"""
     try:
         response = requests.get(rss_url)
