@@ -38,6 +38,7 @@ class RssTests(unittest.TestCase):
         """)
         cursor.close()
         rss_db.conn.commit()
+        rss_db.run_setup()
 
     def test_get_all_feed1_posts(self):
         posts = get_posts("http://127.0.0.1:8010/feed1.xml")
