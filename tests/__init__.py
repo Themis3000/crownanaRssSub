@@ -28,7 +28,7 @@ class RssTests(unittest.TestCase):
         cls.http_process.join()
 
     def setUp(self):
-        cursor = rss_db.conn.setup_cursor()
+        cursor = rss_db.conn.cursor()
         cursor.execute("""
             DROP SCHEMA public CASCADE;
             CREATE SCHEMA public;
@@ -89,3 +89,9 @@ class RssTests(unittest.TestCase):
         post_date = email.utils.parsedate_to_datetime("Sun, 13 Jul 2025 04:08:07 +0000")
         posts = get_posts("http://127.0.0.1:8010/feed2.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 0)
+
+    def test_add_feed_1(self):
+        rss_db.add_feed("http://127.0.0.1:8010/feed1.xml")
+        feed_data = rss_db.get_feed_by_rss("http://127.0.0.1:8010/feed1.xml")
+        print(feed_data)
+        return

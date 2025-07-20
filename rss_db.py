@@ -43,3 +43,16 @@ def add_feed(rss_url: str):
           "last_post_pub": last_post.get_datetime()})
     cursor.close()
     conn.commit()
+
+
+def get_feed_by_rss(rss_url: str):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id,
+        last_post_pub, next_run
+        FROM feeds
+        WHERE rss_url = %(rss_url)s
+    """, {"rss_url": rss_url})
+    content = cursor.fetchone()
+    cursor.close()
+    return content
