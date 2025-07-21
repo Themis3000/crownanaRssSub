@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .unsub {
+            font-size: 10pt;
+        }
+        .advert {
+            font-size: 8pt;
+        }
+    </style>
+    <title></title>
+</head>
+<body>
+    <h2>A new post has been posted to {{ blog_update.blog_name }}!</h2>
+    {% for post in rss_posts %}
+        <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.get_readable_date() }}</b><br>
+    {% endfor %}
+    <footer>
+        <p class="unsub">This email was sent to you because you subscribed to {{ blog_update.blog_name }} email updates.
+            Click <a href="">here</a> if you wish to unsubscribe</p>
+        <p class="advert">Email updates provided for {{ blog_update.blog_name }} by crownana rss email services</p>
+    </footer>
+</body>
+</html>

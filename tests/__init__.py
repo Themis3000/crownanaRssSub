@@ -115,3 +115,6 @@ class RssTests(unittest.TestCase):
                 validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
             add_feed()
             self.assertRaises(IntegrityError, add_feed)
+
+    def add_subscriber(self):
+        pass
