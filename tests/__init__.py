@@ -139,3 +139,15 @@ class RssTests(unittest.TestCase):
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
             self.assertTrue(updated_sub.signup_confirmed)
+
+    def test_forbid_double_subscription(self):
+        with QueryManager() as q:
+            def subscribe():
+                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            subscribe()
+            self.assertRaises(IntegrityError, subscribe)
+        with QueryManager() as q:
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
