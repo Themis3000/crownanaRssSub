@@ -1,4 +1,3 @@
-- Fix confirmation_code generation
 - Don't allow 2 emails to sign up at once
 - Add unsubscribe
 - Get amazon ses going
