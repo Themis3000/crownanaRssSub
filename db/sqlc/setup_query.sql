@@ -28,7 +28,7 @@ create table subscriptions
         feed_id           integer                    not null
             references feeds(feed_id),
         subscription_time timestamp(0) default NOW() not null,
-        confirmation_code integer default random()   not null,
+        confirmation_code float default random()   not null,
         email             varchar(255)               not null,
         signup_confirmed  boolean default false      not null
     );
