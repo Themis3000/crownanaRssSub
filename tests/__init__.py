@@ -18,8 +18,6 @@ def start_http():
 
 
 class RssTests(unittest.TestCase):
-    """Tests for the utils file"""
-
     @classmethod
     def setUpClass(cls):
         cls.http_process = Process(target=start_http)
