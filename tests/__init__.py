@@ -1,6 +1,7 @@
 import unittest
 import sqlalchemy
-from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription
+from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
+    InvalidConfirmationCode, InvalidSubscriber
 from rss import get_posts
 from multiprocessing import Process
 import os
@@ -162,3 +163,18 @@ class RssTests(unittest.TestCase):
             self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
             self.assertEqual(unsub_email.to, "test@test.com")
             self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
+
+    def test_invalid_unsubscribe(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+
+        with QueryManager() as q:
+            invalid_code = sub.confirmation_code + 0.001
+
+            def remove_sub_invalid_code():
+                remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=invalid_code)
+            self.assertRaises(InvalidConfirmationCode, remove_sub_invalid_code)
+
+            def remove_sub_invalid_id():
+                remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
+            self.assertRaises(InvalidSubscriber, remove_sub_invalid_id)
