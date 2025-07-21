@@ -1,4 +1,4 @@
-- Add subscribe confirmation
+- Fix confirmation_code generation
 - Add unsubscribe
 - Get amazon ses going
 - Create rss worker

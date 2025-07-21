@@ -1,6 +1,6 @@
 import unittest
 import sqlalchemy
-from utils import validate_and_add_feed, add_subscriber
+from utils import validate_and_add_feed, add_subscriber, confirm_subscription
 from rss import get_posts
 from multiprocessing import Process
 import os
@@ -131,3 +131,11 @@ class RssTests(unittest.TestCase):
             self.assertEqual(sub_email_call['confirm_url'], confirm_url)
             self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
             self.assertEqual(sub_email.to, "test@test.com")
+
+    def test_confirm_subscription(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            self.assertFalse(sub.signup_confirmed)
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+            self.assertTrue(updated_sub.signup_confirmed)
