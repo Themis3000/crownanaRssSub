@@ -17,6 +17,13 @@ returning subscriber_id, feed_id, subscription_time, confirmation_code, email, s
 """
 
 
+CONFIRM_SUBSCRIPTION = """-- name: confirm_subscription \\:exec
+UPDATE subscriptions
+    set signup_confirmed = TRUE
+WHERE subscriber_id = :p1
+"""
+
+
 CREATE_FEED = """-- name: create_feed \\:one
 INSERT INTO feeds (rss_url, feed_name, last_post_id, last_post_pub)
 VALUES (:p1, :p2, :p3, :p4)
@@ -33,6 +40,12 @@ WHERE feed_id = :p1 LIMIT 1
 GET_FEED_BY_RSS = """-- name: get_feed_by_rss \\:one
 SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run from feeds
 WHERE rss_url = :p1 LIMIT 1
+"""
+
+
+GET_SUBSCRIBER = """-- name: get_subscriber \\:one
+SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed from subscriptions
+WHERE subscriber_id = :p1 LIMIT 1
 """
 
 
@@ -75,6 +88,9 @@ class Querier:
             email=row[4],
             signup_confirmed=row[5],
         )
+
+    def confirm_subscription(self, *, subscriber_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id})
 
     def create_feed(self, *, rss_url: str, feed_name: str, last_post_id: str, last_post_pub: datetime.datetime) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {
@@ -130,6 +146,19 @@ class Querier:
             last_post_id=row[7],
             last_post_pub=row[8],
             next_run=row[9],
+        )
+
+    def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
+        row = self._conn.execute(sqlalchemy.text(GET_SUBSCRIBER), {"p1": subscriber_id}).first()
+        if row is None:
+            return None
+        return models.Subscription(
+            subscriber_id=row[0],
+            feed_id=row[1],
+            subscription_time=row[2],
+            confirmation_code=row[3],
+            email=row[4],
+            signup_confirmed=row[5],
         )
 
     def list_feeds(self) -> Iterator[models.Feed]:

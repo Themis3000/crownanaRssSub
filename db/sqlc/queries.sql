@@ -32,3 +32,12 @@ WHERE feed_id = $1;
 INSERT INTO subscriptions (feed_id, email)
 VALUES ($1, $2)
 returning *;
+
+-- name: get_subscriber :one
+SELECT * from subscriptions
+WHERE subscriber_id = $1 LIMIT 1;
+
+-- name: confirm_subscription :exec
+UPDATE subscriptions
+    set signup_confirmed = TRUE
+WHERE subscriber_id = $1;

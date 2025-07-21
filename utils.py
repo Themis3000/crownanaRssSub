@@ -9,12 +9,14 @@ else:
     base_url = os.environ["base_url"]
 
 
+class EmptyRSS(Exception):
+    pass
+
+
 def validate_and_add_feed(q: Querier, rss_url: str):
     feed = get_posts(rss_url)
-    if feed is None:
-        raise Exception("Could not fetch posts")
     if len(feed.rss_posts) == 0:
-        raise Exception("Post history is empty")
+        raise EmptyRSS()
     last_post = feed.rss_posts[0]
     query = q.create_feed(rss_url=rss_url,
                           feed_name=feed.blog_name,
@@ -31,3 +33,20 @@ def add_subscriber(q: Querier, rss_url: str, sub_email: str):
     confirm_url = f"{base_url}/sub_confirm?sub_id={subscriber.subscriber_id}&code={subscriber.confirmation_code}"
     email_serv.notify_subscribe(to_addr=sub_email, blog_name=feed.feed_name, confirm_url=confirm_url)
     return subscriber
+
+
+class InvalidConfirmationCode(Exception):
+    pass
+
+
+class InvalidSubscriber(Exception):
+    pass
+
+
+def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int):
+    subscriber = q.get_subscriber(subscriber_id=subscriber_id)
+    if subscriber is None:
+        raise InvalidSubscriber()
+    if subscriber.confirmation_code != confirmation_code:
+        raise InvalidConfirmationCode()
+    q.confirm_subscription(subscriber_id=subscriber_id)
