@@ -1,3 +1,10 @@
+"""
+Currently just serves as a test file.
+
+Once all procedures are in place and fully unit tested, a http server with endpoints linked to the procedures will be
+stood up in this file
+"""
+
 from utils import validate_and_add_feed
 from db import QueryManager, update_db, engine
 
