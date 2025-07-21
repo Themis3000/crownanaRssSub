@@ -1,6 +1,6 @@
 import unittest
 import sqlalchemy
-from utils import validate_and_add_feed, add_subscriber, confirm_subscription
+from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription
 from rss import get_posts
 from multiprocessing import Process
 import os
@@ -42,6 +42,7 @@ class RssTests(unittest.TestCase):
         setup_db(conn)
         conn.commit()
         conn.close()
+        email_serv.clear_logs()
 
     def test_get_all_feed1_posts(self):
         posts = get_posts("http://127.0.0.1:8010/feed1.xml")
@@ -151,3 +152,13 @@ class RssTests(unittest.TestCase):
             add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
             add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
             add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
+
+    def test_unsubscribe(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
+            remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            unsub_email = email_serv.email_log[1]
+            self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
+            self.assertEqual(unsub_email.to, "test@test.com")
+            self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))

@@ -55,10 +55,21 @@ ORDER BY feed_id
 """
 
 
+REMOVE_SUBSCRIPTION = """-- name: remove_subscription \\:exec
+DELETE FROM subscriptions
+WHERE subscriber_id = :p1
+"""
+
+
 SET_LAST_CHECK_NOW = """-- name: set_last_check_now \\:exec
 UPDATE feeds
     set last_update = NOW()
 WHERE feed_id = :p1
+"""
+
+
+SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
+SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
 """
 
 
@@ -177,8 +188,17 @@ class Querier:
                 next_run=row[9],
             )
 
+    def remove_subscription(self, *, subscriber_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})
+
     def set_last_check_now(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(SET_LAST_CHECK_NOW), {"p1": feed_id})
+
+    def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
+        row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()
+        if row is None:
+            return None
+        return row[0]
 
     def update_post(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime, last_update: datetime.datetime) -> None:
         self._conn.execute(sqlalchemy.text(UPDATE_POST), {

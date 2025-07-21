@@ -37,7 +37,14 @@ returning *;
 SELECT * from subscriptions
 WHERE subscriber_id = $1 LIMIT 1;
 
+-- name: subscriber_exists :one
+SELECT exists(SELECT * FROM subscriptions WHERE subscriber_id = $1) AS sub_exists;
+
 -- name: confirm_subscription :exec
 UPDATE subscriptions
     set signup_confirmed = TRUE
+WHERE subscriber_id = $1;
+
+-- name: remove_subscription :exec
+DELETE FROM subscriptions
 WHERE subscriber_id = $1;

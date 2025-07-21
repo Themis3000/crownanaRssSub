@@ -37,3 +37,7 @@ class MockEmail(BaseEmail):
     def notify_unsubscribe(self, **kwargs):
         self.logged_calls.append(kwargs)
         super().notify_unsubscribe(**kwargs)
+
+    def clear_logs(self):
+        self.email_log = []
+        self.logged_calls = []

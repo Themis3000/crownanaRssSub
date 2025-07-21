@@ -50,3 +50,14 @@ def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int)
     if subscriber.confirmation_code != confirmation_code:
         raise InvalidConfirmationCode()
     q.confirm_subscription(subscriber_id=subscriber_id)
+
+
+def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int):
+    subscriber = q.get_subscriber(subscriber_id=subscriber_id)
+    if subscriber is None:
+        raise InvalidSubscriber()
+    if subscriber.confirmation_code != confirmation_code:
+        raise InvalidConfirmationCode()
+    blog = q.get_feed(feed_id=subscriber.feed_id)
+    q.remove_subscription(subscriber_id=subscriber_id)
+    email_serv.notify_unsubscribe(to_addr=subscriber.email, blog_name=blog.feed_name)
