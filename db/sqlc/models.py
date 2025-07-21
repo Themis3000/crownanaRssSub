@@ -25,6 +25,6 @@ class Subscription:
     subscriber_id: int
     feed_id: int
     subscription_time: datetime.datetime
-    confirmation_code: int
+    confirmation_code: float
     email: str
     signup_confirmed: bool
