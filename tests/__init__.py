@@ -1,12 +1,14 @@
 import unittest
 import sqlalchemy
-from utils import get_posts, validate_and_add_feed
+from utils import validate_and_add_feed, add_subscriber
+from rss import get_posts
 from multiprocessing import Process
 import os
 import email.utils
 from db import QueryManager, engine, setup_db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
+from email_service import email_serv, MockEmail
 
 
 def start_http():
@@ -116,5 +118,16 @@ class RssTests(unittest.TestCase):
             add_feed()
             self.assertRaises(IntegrityError, add_feed)
 
-    def add_subscriber(self):
-        pass
+    def test_add_subscriber(self):
+        if not isinstance(email_serv, MockEmail):
+            raise Exception("The email service is not in testing mode.")
+
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub_email = email_serv.email_log[0]
+            sub_email_call = email_serv.logged_calls[0]
+            self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
+            confirm_url = f"http://127.0.0.1:8080/sub_confirm?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
+            self.assertEqual(sub_email_call['confirm_url'], confirm_url)
+            self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
+            self.assertEqual(sub_email.to, "test@test.com")

@@ -13,6 +13,7 @@ class LoggedEmail:
 class MockEmail(BaseEmail):
     def __init__(self):
         self.email_log: List[LoggedEmail] = []
+        self.logged_calls = []
 
     def send_email(self, to_addr: str, subject: str, content: str):
         self.email_log.append(LoggedEmail(to=to_addr, subject=subject, content=content))
@@ -24,3 +25,7 @@ class MockEmail(BaseEmail):
         {content}
         """
         print(email_message)
+
+    def notify_subscribe(self, **kwargs):
+        self.logged_calls.append(kwargs)
+        super().notify_subscribe(**kwargs)

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from utils import RssUpdates
+from rss import RssUpdates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 env = Environment(
