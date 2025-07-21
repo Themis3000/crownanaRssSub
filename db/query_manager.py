@@ -15,7 +15,7 @@ class QueryManager:
     def __init__(self):
         pass
 
-    def __enter__(self):
+    def __enter__(self) -> Querier:
         self.conn = engine.connect()
         return Querier(self.conn)
 

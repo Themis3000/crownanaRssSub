@@ -5,6 +5,7 @@ from typing import List
 import hashlib
 import email.utils
 from datetime import datetime, timezone
+from db import Querier
 
 
 @dataclasses.dataclass()
@@ -67,3 +68,17 @@ def get_posts(rss_url: str, last_id: str = None,
         rss_posts.append(post)
 
     return RssUpdates(blog_name=rss.channel.title.content, rss_posts=rss_posts)
+
+
+def validate_and_add_feed(q: Querier, rss_url: str):
+    feed = get_posts(rss_url)
+    if feed is None:
+        raise Exception("Could not fetch posts")
+    if len(feed.rss_posts) == 0:
+        raise Exception("Post history is empty")
+    last_post = feed.rss_posts[0]
+    query = q.create_feed(rss_url=rss_url,
+                          feed_name=feed.blog_name,
+                          last_post_id=last_post.post_id,
+                          last_post_pub=last_post.get_datetime())
+    return query

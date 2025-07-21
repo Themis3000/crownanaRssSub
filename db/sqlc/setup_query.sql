@@ -39,7 +39,3 @@ create index subscriptions_feed_id_index
 create index email_not_subbed_index
     on subscriptions (email)
     where not subscriptions.signup_confirmed;
-
--- name: get_subscription :one
-select * from subscriptions
-where subscriber_id = $1 limit 1;
