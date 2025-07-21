@@ -18,3 +18,13 @@ class Feed:
     last_post_id: str
     last_post_pub: datetime.datetime
     next_run: Optional[datetime.datetime]
+
+
+@dataclasses.dataclass()
+class Subscription:
+    subscriber_id: int
+    feed_id: int
+    subscription_time: datetime.datetime
+    confirmation_code: int
+    email: str
+    signup_confirmed: bool

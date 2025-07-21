@@ -35,14 +35,14 @@ ORDER BY feed_id
 """
 
 
-UPDATE_FEED_CHECK = """-- name: update_feed_check \\:exec
+SET_LAST_CHECK_NOW = """-- name: set_last_check_now \\:exec
 UPDATE feeds
-    set last_update = :p2
+    set last_update = NOW()
 WHERE feed_id = :p1
 """
 
 
-UPDATE_FEED_POST = """-- name: update_feed_post \\:exec
+UPDATE_POST = """-- name: update_post \\:exec
 UPDATE feeds
     set last_post_id = :p2,
     last_post_pub = :p3,
@@ -128,11 +128,11 @@ class Querier:
                 next_run=row[9],
             )
 
-    def update_feed_check(self, *, feed_id: int, last_update: datetime.datetime) -> None:
-        self._conn.execute(sqlalchemy.text(UPDATE_FEED_CHECK), {"p1": feed_id, "p2": last_update})
+    def set_last_check_now(self, *, feed_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(SET_LAST_CHECK_NOW), {"p1": feed_id})
 
-    def update_feed_post(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime, last_update: datetime.datetime) -> None:
-        self._conn.execute(sqlalchemy.text(UPDATE_FEED_POST), {
+    def update_post(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime, last_update: datetime.datetime) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_POST), {
             "p1": feed_id,
             "p2": last_post_id,
             "p3": last_post_pub,
