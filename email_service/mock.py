@@ -29,3 +29,11 @@ class MockEmail(BaseEmail):
     def notify_subscribe(self, **kwargs):
         self.logged_calls.append(kwargs)
         super().notify_subscribe(**kwargs)
+
+    def notify_update(self, to_addr: str, **kwargs):
+        self.logged_calls.append(kwargs)
+        super().notify_update(**kwargs)
+
+    def notify_unsubscribe(self, **kwargs):
+        self.logged_calls.append(kwargs)
+        super().notify_unsubscribe(**kwargs)
