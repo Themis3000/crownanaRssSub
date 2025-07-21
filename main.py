@@ -1,5 +1,12 @@
-import rss_db
-from utils import get_posts
+from utils import validate_and_add_feed
+from db import QueryManager, update_db, engine
 
-posts = get_posts("http://localhost:8080/blog/rss.xml")
-print(posts)
+conn = engine.connect()
+update_db(conn)
+conn.commit()
+conn.close()
+
+with QueryManager() as q:
+    validate_and_add_feed(q, "https://www.crownanabread.com/blog/rss.xml")
+    feed_data = q.get_feed_by_rss(rss_url="https://www.crownanabread.com/blog/rss.xml")
+    print(feed_data)
