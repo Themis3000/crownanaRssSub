@@ -1,0 +1,5 @@
+- Add subscribe confirmation
+- Add unsubscribe
+- Get amazon ses going
+- Create rss worker
+- Finally, put it all behind an http server
