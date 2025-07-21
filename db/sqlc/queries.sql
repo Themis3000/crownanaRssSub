@@ -28,3 +28,7 @@ UPDATE feeds
     set last_update = NOW()
 WHERE feed_id = $1;
 
+-- name: add_subscriber :one
+INSERT INTO subscriptions (feed_id, email)
+VALUES ($1, $2)
+returning *;

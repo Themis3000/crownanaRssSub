@@ -86,3 +86,11 @@ def validate_and_add_feed(q: Querier, rss_url: str):
                           last_post_id=last_post.post_id,
                           last_post_pub=last_post.get_datetime())
     return query
+
+
+def add_subscriber(q: Querier, rss_url: str, sub_email: str):
+    feed = q.get_feed_by_rss(rss_url=rss_url)
+    if feed is None:
+        feed = validate_and_add_feed(q=q, rss_url=rss_url)
+    subscriber = q.add_subscriber(feed_id=feed.feed_id, email=sub_email)
+    return subscriber

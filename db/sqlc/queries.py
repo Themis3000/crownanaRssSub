@@ -10,6 +10,13 @@ import sqlalchemy
 from . import models
 
 
+ADD_SUBSCRIBER = """-- name: add_subscriber \\:one
+INSERT INTO subscriptions (feed_id, email)
+VALUES (:p1, :p2)
+returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed
+"""
+
+
 CREATE_FEED = """-- name: create_feed \\:one
 INSERT INTO feeds (rss_url, feed_name, last_post_id, last_post_pub)
 VALUES (:p1, :p2, :p3, :p4)
@@ -55,6 +62,19 @@ WHERE feed_id = :p1
 class Querier:
     def __init__(self, conn: sqlalchemy.engine.Connection):
         self._conn = conn
+
+    def add_subscriber(self, *, feed_id: int, email: str) -> Optional[models.Subscription]:
+        row = self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email}).first()
+        if row is None:
+            return None
+        return models.Subscription(
+            subscriber_id=row[0],
+            feed_id=row[1],
+            subscription_time=row[2],
+            confirmation_code=row[3],
+            email=row[4],
+            signup_confirmed=row[5],
+        )
 
     def create_feed(self, *, rss_url: str, feed_name: str, last_post_id: str, last_post_pub: datetime.datetime) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {
