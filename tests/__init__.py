@@ -6,6 +6,7 @@ import os
 import email.utils
 from db import QueryManager, engine, setup_db
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 
 
 def start_http():
@@ -109,3 +110,10 @@ class RssTests(unittest.TestCase):
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed2.xml")
             self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 13, 4, 8, 7))
             self.assertEqual(feed_data.last_post_id, '92b220bab408cb4d3e4f0b8b788139df4845cfb5')
+
+    def test_unique(self):
+        with QueryManager() as q:
+            def add_feed():
+                validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
+            add_feed()
+            self.assertRaises(IntegrityError, add_feed)
