@@ -1,4 +1,6 @@
 import unittest
+
+import email_validator.exceptions_types
 import sqlalchemy
 from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
     InvalidConfirmationCode, InvalidSubscriber
@@ -178,3 +180,9 @@ class RssTests(unittest.TestCase):
             def remove_sub_invalid_id():
                 remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
             self.assertRaises(InvalidSubscriber, remove_sub_invalid_id)
+
+    def test_invalid_email(self):
+        with QueryManager() as q:
+            def add_sub_invalid():
+                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
+            self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
