@@ -23,7 +23,12 @@ def do_feed_job() -> Tuple[Feed, RssUpdates] | None:
     """Tries to find a feed in need of a refresh. Returns feed and posts if feed was updated"""
     with QueryManager as q:
         feed = q.get_feed_to_run()
-        posts = caching_get_posts(rss_url=feed.rss_url, last_id=feed.last_post_id, last_date=feed.last_post_pub)
+
+        try:
+            posts = caching_get_posts(rss_url=feed.rss_url, last_id=feed.last_post_id, last_date=feed.last_post_pub)
+        except Exception:
+            q.feed_set_last_fail_now(feed_id=feed.feed_id)
+            return
 
         if len(posts.rss_posts) == 0:
             q.feed_set_last_check_now(feed_id=feed.feed_id)
@@ -54,4 +59,5 @@ def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
     return True
 
 
-# def find_unfinished_feed() ->
+def find_unfinished_feed() -> Tuple[Feed, RssUpdates] | None:
+    pass

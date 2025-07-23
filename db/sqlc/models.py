@@ -19,6 +19,7 @@ class Feed:
     last_post_pub: datetime.datetime
     last_notification_pub: datetime.datetime
     unresolved_notification: bool
+    consecutive_failures: int
     next_run: datetime.datetime
 
 

@@ -27,13 +27,22 @@ WHERE subscriber_id = :p1
 CREATE_FEED = """-- name: create_feed \\:one
 INSERT INTO feeds (rss_url, feed_name, last_post_id, last_notification_post_id, last_post_pub)
 VALUES (:p1, :p2, :p3, :p3, :p4)
-RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run
+RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run
 """
 
 
 FEED_SET_LAST_CHECK_NOW = """-- name: feed_set_last_check_now \\:exec
 UPDATE feeds
-    set last_update = NOW()
+    set last_update = NOW(),
+        consecutive_failures = 0
+WHERE feed_id = :p1
+"""
+
+
+FEED_SET_LAST_FAIL_NOW = """-- name: feed_set_last_fail_now \\:exec
+UPDATE feeds
+    set last_update = NOW(),
+        consecutive_failures = consecutive_failures + 1
 WHERE feed_id = :p1
 """
 
@@ -47,19 +56,19 @@ RETURNING subscriber_id, feed_id, subscription_time, confirmation_code, email, s
 
 
 GET_FEED = """-- name: get_feed \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
 WHERE feed_id = :p1 LIMIT 1
 """
 
 
 GET_FEED_BY_RSS = """-- name: get_feed_by_rss \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
 WHERE rss_url = :p1 LIMIT 1
 """
 
 
 GET_FEED_TO_RUN = """-- name: get_feed_to_run \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
 WHERE next_run > now() AND not unresolved_notification
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED
@@ -73,7 +82,7 @@ WHERE subscriber_id = :p1 LIMIT 1
 
 
 LIST_FEEDS = """-- name: list_feeds \\:many
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
 ORDER BY feed_id
 """
 
@@ -100,7 +109,7 @@ UPDATE feeds
         last_post_pub = :p3,
         unresolved_notification = true
 WHERE feed_id = :p1
-RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run
+RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run
 """
 
 
@@ -114,7 +123,8 @@ UPDATE feeds
     set last_post_id = :p2,
     last_post_pub = :p3,
     last_update = :p4,
-    last_completed = :p4
+    last_completed = :p4,
+    consecutive_failures = 0
 WHERE feed_id = :p1
 """
 
@@ -162,11 +172,15 @@ class Querier:
             last_post_pub=row[9],
             last_notification_pub=row[10],
             unresolved_notification=row[11],
-            next_run=row[12],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def feed_set_last_check_now(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(FEED_SET_LAST_CHECK_NOW), {"p1": feed_id})
+
+    def feed_set_last_fail_now(self, *, feed_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(FEED_SET_LAST_FAIL_NOW), {"p1": feed_id})
 
     def fetch_and_update_uncurrent_sub(self, *, last_post_id: str, feed_id: int) -> Optional[models.Subscription]:
         row = self._conn.execute(sqlalchemy.text(FETCH_AND_UPDATE_UNCURRENT_SUB), {"p1": last_post_id, "p2": feed_id}).first()
@@ -199,7 +213,8 @@ class Querier:
             last_post_pub=row[9],
             last_notification_pub=row[10],
             unresolved_notification=row[11],
-            next_run=row[12],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def get_feed_by_rss(self, *, rss_url: str) -> Optional[models.Feed]:
@@ -219,7 +234,8 @@ class Querier:
             last_post_pub=row[9],
             last_notification_pub=row[10],
             unresolved_notification=row[11],
-            next_run=row[12],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def get_feed_to_run(self) -> Optional[models.Feed]:
@@ -239,7 +255,8 @@ class Querier:
             last_post_pub=row[9],
             last_notification_pub=row[10],
             unresolved_notification=row[11],
-            next_run=row[12],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
@@ -272,7 +289,8 @@ class Querier:
                 last_post_pub=row[9],
                 last_notification_pub=row[10],
                 unresolved_notification=row[11],
-                next_run=row[12],
+                consecutive_failures=row[12],
+                next_run=row[13],
             )
 
     def remove_subscription(self, *, subscriber_id: int) -> None:
@@ -298,7 +316,8 @@ class Querier:
             last_post_pub=row[9],
             last_notification_pub=row[10],
             unresolved_notification=row[11],
-            next_run=row[12],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:

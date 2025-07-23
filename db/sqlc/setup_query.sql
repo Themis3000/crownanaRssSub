@@ -16,6 +16,7 @@ create table feeds
         last_post_pub             timestamp(0)                             not null,
         last_notification_pub     timestamp(0) default NOW()               not null,
         unresolved_notification   boolean      default FALSE               not null,
+        consecutive_failures      integer      default 0                   not null,
 
         next_run                  timestamp(0) generated always as ( last_completed + interval ) stored not null
     );

@@ -20,12 +20,20 @@ UPDATE feeds
     set last_post_id = $2,
     last_post_pub = $3,
     last_update = $4,
-    last_completed = $4
+    last_completed = $4,
+    consecutive_failures = 0
 WHERE feed_id = $1;
 
 -- name: feed_set_last_check_now :exec
 UPDATE feeds
-    set last_update = NOW()
+    set last_update = NOW(),
+        consecutive_failures = 0
+WHERE feed_id = $1;
+
+-- name: feed_set_last_fail_now :exec
+UPDATE feeds
+    set last_update = NOW(),
+        consecutive_failures = consecutive_failures + 1
 WHERE feed_id = $1;
 
 -- name: add_subscriber :one
