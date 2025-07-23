@@ -41,9 +41,16 @@ WHERE feed_id = :p1
 
 FEED_SET_LAST_FAIL_NOW = """-- name: feed_set_last_fail_now \\:exec
 UPDATE feeds
-    set last_update = NOW(),
+    set last_completed = NOW(),
         consecutive_failures = consecutive_failures + 1
 WHERE feed_id = :p1
+"""
+
+
+FEED_UPDATE_NOW = """-- name: feed_update_now \\:exec
+UPDATE feeds
+    SET last_completed = NOW() - feeds.interval - interval '00\\:00\\:01'
+WHERE rss_url = :p1
 """
 
 
@@ -110,6 +117,7 @@ WHERE feed_id = :p1
 SET_FEED_UPDATE = """-- name: set_feed_update \\:one
 UPDATE feeds
     set last_update = now(),
+        last_completed = now(),
         last_notification_post_id = last_post_id,
         last_notification_pub = last_post_pub,
         last_post_id = :p2,
@@ -122,17 +130,6 @@ RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, 
 
 SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
 SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_id FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
-"""
-
-
-UPDATE_POST = """-- name: update_post \\:exec
-UPDATE feeds
-    set last_post_id = :p2,
-    last_post_pub = :p3,
-    last_update = :p4,
-    last_completed = :p4,
-    consecutive_failures = 0
-WHERE feed_id = :p1
 """
 
 
@@ -188,6 +185,9 @@ class Querier:
 
     def feed_set_last_fail_now(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(FEED_SET_LAST_FAIL_NOW), {"p1": feed_id})
+
+    def feed_update_now(self, *, rss_url: str) -> None:
+        self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
 
     def fetch_and_update_uncurrent_sub(self, *, last_post_id: str, feed_id: int) -> Optional[models.Subscription]:
         row = self._conn.execute(sqlalchemy.text(FETCH_AND_UPDATE_UNCURRENT_SUB), {"p1": last_post_id, "p2": feed_id}).first()
@@ -353,11 +353,3 @@ class Querier:
         if row is None:
             return None
         return row[0]
-
-    def update_post(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime, last_update: datetime.datetime) -> None:
-        self._conn.execute(sqlalchemy.text(UPDATE_POST), {
-            "p1": feed_id,
-            "p2": last_post_id,
-            "p3": last_post_pub,
-            "p4": last_update,
-        })

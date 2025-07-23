@@ -15,15 +15,6 @@ INSERT INTO feeds (rss_url, feed_name, last_post_id, last_notification_post_id, 
 VALUES ($1, $2, $3, $3, $4)
 RETURNING *;
 
--- name: update_post :exec
-UPDATE feeds
-    set last_post_id = $2,
-    last_post_pub = $3,
-    last_update = $4,
-    last_completed = $4,
-    consecutive_failures = 0
-WHERE feed_id = $1;
-
 -- name: feed_set_last_check_now :exec
 UPDATE feeds
     set last_completed = NOW(),
@@ -32,9 +23,21 @@ WHERE feed_id = $1;
 
 -- name: feed_set_last_fail_now :exec
 UPDATE feeds
-    set last_update = NOW(),
+    set last_completed = NOW(),
         consecutive_failures = consecutive_failures + 1
 WHERE feed_id = $1;
+
+-- name: set_feed_update :one
+UPDATE feeds
+    set last_update = now(),
+        last_completed = now(),
+        last_notification_post_id = last_post_id,
+        last_notification_pub = last_post_pub,
+        last_post_id = $2,
+        last_post_pub = $3,
+        unresolved_notification = true
+WHERE feed_id = $1
+RETURNING *;
 
 -- name: add_subscriber :one
 INSERT INTO subscriptions (feed_id, email)
@@ -68,17 +71,6 @@ SELECT * from feeds
 WHERE unresolved_notification
 LIMIT 1;
 
--- name: set_feed_update :one
-UPDATE feeds
-    set last_update = now(),
-        last_notification_post_id = last_post_id,
-        last_notification_pub = last_post_pub,
-        last_post_id = $2,
-        last_post_pub = $3,
-        unresolved_notification = true
-WHERE feed_id = $1
-RETURNING *;
-
 -- name: resolve_feed_notifications :exec
 UPDATE feeds
     set unresolved_notification = false
@@ -90,7 +82,7 @@ UPDATE subscriptions
 WHERE last_post_id != $1 AND feed_id = $2
 RETURNING *;
 
--- -- name: feed_update_now :exec
--- UPDATE feeds
---     SET las = NOW() - interval '00:01'
--- WHERE rss_url = $1;
+-- name: feed_update_now :exec
+UPDATE feeds
+    SET last_completed = NOW() - feeds.interval - interval '00:00:01'
+WHERE rss_url = $1;
