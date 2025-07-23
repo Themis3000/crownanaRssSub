@@ -7,7 +7,8 @@ from email_service import email_serv
 # This isn't friendly to multiple concurrent workers
 # Things probably won't break technically speaking, but it will cause duplicate fetches to the rss endpoint
 # We don't want to get rate limited or get inconsistent responses...
-post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)))
+# This whole key thing is a hack. I'm going to replace it very soon.
+post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)), key=lambda **kwargs: kwargs["rss_url"])
 caching_get_posts = post_caching(get_posts)
 
 

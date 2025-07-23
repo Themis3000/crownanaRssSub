@@ -27,7 +27,7 @@ WHERE subscriber_id = :p1
 CREATE_FEED = """-- name: create_feed \\:one
 INSERT INTO feeds (rss_url, feed_name, last_post_id, last_post_pub)
 VALUES (:p1, :p2, :p3, :p4)
-RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run, unresolved_notification
+RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, unresolved_notification, next_run
 """
 
 
@@ -47,19 +47,19 @@ RETURNING subscriber_id, feed_id, subscription_time, confirmation_code, email, s
 
 
 GET_FEED = """-- name: get_feed \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run, unresolved_notification from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, unresolved_notification, next_run from feeds
 WHERE feed_id = :p1 LIMIT 1
 """
 
 
 GET_FEED_BY_RSS = """-- name: get_feed_by_rss \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run, unresolved_notification from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, unresolved_notification, next_run from feeds
 WHERE rss_url = :p1 LIMIT 1
 """
 
 
 GET_FEED_TO_RUN = """-- name: get_feed_to_run \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run, unresolved_notification from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, unresolved_notification, next_run from feeds
 WHERE next_run > now() AND not unresolved_notification
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED
@@ -73,7 +73,7 @@ WHERE subscriber_id = :p1 LIMIT 1
 
 
 LIST_FEEDS = """-- name: list_feeds \\:many
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_post_pub, next_run, unresolved_notification from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, unresolved_notification, next_run from feeds
 ORDER BY feed_id
 """
 
@@ -94,6 +94,7 @@ WHERE feed_id = :p1
 SET_FEED_UPDATE = """-- name: set_feed_update \\:exec
 UPDATE feeds
     set last_update = now(),
+        last_notification_post_id = last_post_id,
         last_post_id = :p2,
         last_post_pub = :p3,
         unresolved_notification = true
@@ -155,9 +156,10 @@ class Querier:
             last_completed=row[5],
             last_update=row[6],
             last_post_id=row[7],
-            last_post_pub=row[8],
-            next_run=row[9],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
             unresolved_notification=row[10],
+            next_run=row[11],
         )
 
     def feed_set_last_check_now(self, *, feed_id: int) -> None:
@@ -190,9 +192,10 @@ class Querier:
             last_completed=row[5],
             last_update=row[6],
             last_post_id=row[7],
-            last_post_pub=row[8],
-            next_run=row[9],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
             unresolved_notification=row[10],
+            next_run=row[11],
         )
 
     def get_feed_by_rss(self, *, rss_url: str) -> Optional[models.Feed]:
@@ -208,9 +211,10 @@ class Querier:
             last_completed=row[5],
             last_update=row[6],
             last_post_id=row[7],
-            last_post_pub=row[8],
-            next_run=row[9],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
             unresolved_notification=row[10],
+            next_run=row[11],
         )
 
     def get_feed_to_run(self) -> Optional[models.Feed]:
@@ -226,9 +230,10 @@ class Querier:
             last_completed=row[5],
             last_update=row[6],
             last_post_id=row[7],
-            last_post_pub=row[8],
-            next_run=row[9],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
             unresolved_notification=row[10],
+            next_run=row[11],
         )
 
     def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
@@ -257,9 +262,10 @@ class Querier:
                 last_completed=row[5],
                 last_update=row[6],
                 last_post_id=row[7],
-                last_post_pub=row[8],
-                next_run=row[9],
+                last_notification_post_id=row[8],
+                last_post_pub=row[9],
                 unresolved_notification=row[10],
+                next_run=row[11],
             )
 
     def remove_subscription(self, *, subscriber_id: int) -> None:

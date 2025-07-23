@@ -3,7 +3,6 @@
 #   sqlc v1.29.0
 import dataclasses
 import datetime
-from typing import Optional
 
 
 @dataclasses.dataclass()
@@ -16,9 +15,10 @@ class Feed:
     last_completed: datetime.datetime
     last_update: datetime.datetime
     last_post_id: str
+    last_notification_post_id: str
     last_post_pub: datetime.datetime
-    next_run: Optional[datetime.datetime]
     unresolved_notification: bool
+    next_run: datetime.datetime
 
 
 @dataclasses.dataclass()

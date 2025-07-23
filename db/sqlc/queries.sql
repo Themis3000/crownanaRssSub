@@ -58,6 +58,7 @@ FOR NO KEY UPDATE SKIP LOCKED;
 -- name: set_feed_update :exec
 UPDATE feeds
     set last_update = now(),
+        last_notification_post_id = last_post_id,
         last_post_id = $2,
         last_post_pub = $3,
         unresolved_notification = true
