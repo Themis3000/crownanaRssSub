@@ -81,6 +81,13 @@ WHERE subscriber_id = :p1 LIMIT 1
 """
 
 
+GET_UNRESOLVED_FEED = """-- name: get_unresolved_feed \\:one
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
+WHERE unresolved_notification
+LIMIT 1
+"""
+
+
 LIST_FEEDS = """-- name: list_feeds \\:many
 SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
 ORDER BY feed_id
@@ -271,6 +278,27 @@ class Querier:
             email=row[4],
             signup_confirmed=row[5],
             last_post_id=row[6],
+        )
+
+    def get_unresolved_feed(self) -> Optional[models.Feed]:
+        row = self._conn.execute(sqlalchemy.text(GET_UNRESOLVED_FEED)).first()
+        if row is None:
+            return None
+        return models.Feed(
+            feed_id=row[0],
+            rss_url=row[1],
+            feed_name=row[2],
+            addition_date=row[3],
+            interval=row[4],
+            last_completed=row[5],
+            last_update=row[6],
+            last_post_id=row[7],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
+            last_notification_pub=row[10],
+            unresolved_notification=row[11],
+            consecutive_failures=row[12],
+            next_run=row[13],
         )
 
     def list_feeds(self) -> Iterator[models.Feed]:

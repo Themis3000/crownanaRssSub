@@ -63,6 +63,11 @@ WHERE next_run > now() AND not unresolved_notification
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED;
 
+-- name: get_unresolved_feed :one
+SELECT * from feeds
+WHERE unresolved_notification
+LIMIT 1;
+
 -- name: set_feed_update :one
 UPDATE feeds
     set last_update = now(),
