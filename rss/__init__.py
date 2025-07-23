@@ -1,6 +1,7 @@
 import dataclasses
 import email.utils
 import hashlib
+import xml.parsers.expat
 from datetime import datetime, timezone
 from typing import List
 import requests
@@ -48,29 +49,48 @@ class RssUnreachable(Exception):
     pass
 
 
+class RssInvalid(Exception):
+    pass
+
+
 def get_posts(rss_url: str, last_id: str = None,
               last_date: datetime = datetime(year=1980, month=1, day=1, tzinfo=timezone.utc)) -> RssUpdates:
     """Fetches all new posts up to the last known post id or date"""
     try:
         response = requests.get(rss_url, stream=True)
-        response_text = response.raw.read(512000)
+        response_iterator = response.iter_content(512000)
+        response_data = next(response_iterator)
+        response_text = response_data.decode()
         response.close()
     except requests.exceptions.RequestException:
         raise RssUnreachable()
     if not response.ok:
         raise RssUnreachable("Non-ok response")
 
-    rss = RSSParser.parse(response_text.decode())
+    try:
+        rss = RSSParser.parse(response_text)
+    except xml.parsers.expat.ExpatError:
+        raise RssInvalid("Could not parse xml")
+
     rss_posts: List[RssPost] = []
     for item in rss.channel.items:
-        post = RssPost(
-            title=item.title.content,
-            date=item.pub_date.content,
-            description=item.description.content,
-            link=item.links[0].content,
-            guid=item.guid.content if item.guid else None
-        )
-        if last_date > post.get_datetime():
+        try:
+            post = RssPost(
+                title=item.title.content,
+                date=item.pub_date.content,
+                description=item.description.content,
+                link=item.links[0].content,
+                guid=item.guid.content if item.guid else None
+            )
+        except AttributeError:
+            raise RssInvalid("RSS missing attributes")
+
+        try:
+            post_datetime = post.get_datetime()
+        except ValueError:
+            raise RssInvalid("Datetime cannot be processed")
+
+        if last_date > post_datetime:
             break
         if post.post_id == last_id:  # Just in case the most recent post had its pub time changed (edits made to it?)
             break
