@@ -7,13 +7,19 @@ create table feeds
             constraint rss_url_key
                 unique,
         feed_name                 varchar(2000)                            not null,
+--      When this feed was added:
         addition_date             timestamp(0) default NOW()               not null,
+--      How often to refresh the feed:
         interval                  interval     default interval '12 hours' not null,
+--      The last time the feed was run:
         last_completed            timestamp(0) default NOW()               not null,
+--      the last time the feed had an update:
         last_update               timestamp(0) default NOW()               not null,
         last_post_id              varchar(255)                             not null,
         last_notification_post_id varchar(255)                             not null,
+--      The last post publish time, based on the rss feed
         last_post_pub             timestamp(0)                             not null,
+--      The last post publish time from the previous notification
         last_notification_pub     timestamp(0) default NOW()               not null,
         unresolved_notification   boolean      default FALSE               not null,
         consecutive_failures      integer      default 0                   not null,

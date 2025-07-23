@@ -62,7 +62,7 @@ def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
 def find_unfinished_feed() -> Tuple[Feed, RssUpdates] | None:
     """Tries to find any feed with unresolved notifications and returns it along with updates.
     Needed for recovering from worker shutdown during task."""
-    with QueryManager as q:
+    with QueryManager() as q:
         feed = q.get_unresolved_feed()
 
     if not feed:

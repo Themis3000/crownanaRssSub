@@ -26,7 +26,7 @@ WHERE feed_id = $1;
 
 -- name: feed_set_last_check_now :exec
 UPDATE feeds
-    set last_update = NOW(),
+    set last_completed = NOW(),
         consecutive_failures = 0
 WHERE feed_id = $1;
 
@@ -89,3 +89,8 @@ UPDATE subscriptions
     set last_post_id = $1
 WHERE last_post_id != $1 AND feed_id = $2
 RETURNING *;
+
+-- -- name: feed_update_now :exec
+-- UPDATE feeds
+--     SET las = NOW() - interval '00:01'
+-- WHERE rss_url = $1;

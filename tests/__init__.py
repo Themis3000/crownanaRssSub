@@ -186,3 +186,9 @@ class RssTests(unittest.TestCase):
             def add_sub_invalid():
                 add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
             self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
+
+    def test_worker_feed_job(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+

@@ -33,7 +33,7 @@ RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, 
 
 FEED_SET_LAST_CHECK_NOW = """-- name: feed_set_last_check_now \\:exec
 UPDATE feeds
-    set last_update = NOW(),
+    set last_completed = NOW(),
         consecutive_failures = 0
 WHERE feed_id = :p1
 """
