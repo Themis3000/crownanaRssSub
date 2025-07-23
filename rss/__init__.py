@@ -30,8 +30,9 @@ class RssPost:
             date = email.utils.parsedate_to_datetime(self.date)
         except ValueError:
             # Raised when date format does not conform to rfc822
-            # In the future, find some soft way to deal with this that doesn't involve raising an exception.
-            raise
+            # In the future, find some soft way to deal with this that doesn't involve raising an exception right away
+            # Perhaps see if it can be parsed to another standard first.
+            raise RssInvalid("Datetime cannot be processed")
         return date
 
     def get_readable_date(self) -> str:
@@ -85,12 +86,7 @@ def get_posts(rss_url: str, last_id: str = None,
         except AttributeError:
             raise RssInvalid("RSS missing attributes")
 
-        try:
-            post_datetime = post.get_datetime()
-        except ValueError:
-            raise RssInvalid("Datetime cannot be processed")
-
-        if last_date > post_datetime:
+        if last_date > post.get_datetime():
             break
         if post.post_id == last_id:  # Just in case the most recent post had its pub time changed (edits made to it?)
             break
