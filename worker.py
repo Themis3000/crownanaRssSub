@@ -1,6 +1,7 @@
 from db import QueryManager
-from rss import get_posts
+from rss import get_posts, RssUpdates
 from cachetools import TTLCache, cached
+from email_service import email_serv
 
 
 # This isn't friendly to multiple concurrent workers
@@ -31,3 +32,20 @@ def do_feed_job() -> bool:
         return True
 
 
+def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
+    """Tries to find subscribers in need of mail under feed id. Returns if subscribers where found."""
+    # It's very important that this context is exited right after fetching the sub.
+    # Once it's exited it triggers a commit to the db.
+    # If some exception occurs in the block, the transaction will be rolled back.
+    # If an exception occurs, we want to be sure there is no retry out of extreme caution of sending duplicate emails
+    # I'd rather things fail open in this matter
+    with QueryManager as q:
+        sub = q.fetch_and_update_uncurrent_sub(feed_id=feed_id, last_post_id=posts.rss_posts[0].post_id)
+
+    if sub is None:
+        with QueryManager as q:
+            q.resolve_feed_notifications(feed_id=feed_id)
+        return False
+
+    email_serv.notify_update(to_addr=sub.email, blog_update=posts)
+    return True
