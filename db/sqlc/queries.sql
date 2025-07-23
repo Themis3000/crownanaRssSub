@@ -62,7 +62,7 @@ WHERE subscriber_id = $1;
 
 -- name: get_feed_to_run :one
 SELECT * from feeds
-WHERE next_run > now() AND not unresolved_notification
+WHERE now() > next_run AND unresolved_notification = false
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED;
 
@@ -84,5 +84,5 @@ RETURNING *;
 
 -- name: feed_update_now :exec
 UPDATE feeds
-    SET last_completed = NOW() - feeds.interval - interval '00:00:01'
+    SET last_completed = NOW() - feeds.interval - interval '00:05:00'
 WHERE rss_url = $1;

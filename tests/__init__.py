@@ -1,5 +1,4 @@
 import unittest
-
 import email_validator.exceptions_types
 import sqlalchemy
 from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
@@ -12,6 +11,7 @@ from db import QueryManager, engine, setup_db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from email_service import email_serv, MockEmail
+from worker import do_feed_job, find_unfinished_feed, do_mail_job
 
 
 def start_http():
@@ -191,4 +191,12 @@ class RssTests(unittest.TestCase):
         with QueryManager() as q:
             sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+        feed, rss_updates = do_feed_job()
+        self.assertIsNone(feed)
 
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+
+        feed, rss_updates = do_feed_job()
+        self.assertIsNotNone(feed)
+        self.assertIsNotNone(rss_updates)

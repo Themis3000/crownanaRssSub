@@ -19,25 +19,28 @@ def do_work():
     pass
 
 
-def do_feed_job() -> Tuple[Feed, RssUpdates] | None:
+def do_feed_job() -> Tuple[Feed, RssUpdates] | Tuple[None, None]:
     """Tries to find a feed in need of a refresh. Returns feed and posts if feed was updated"""
-    with QueryManager as q:
+    with QueryManager() as q:
         feed = q.get_feed_to_run()
+
+        if feed is None:
+            return None, None
 
         try:
             posts = caching_get_posts(rss_url=feed.rss_url, last_id=feed.last_post_id, last_date=feed.last_post_pub)
         except Exception:
             q.feed_set_last_fail_now(feed_id=feed.feed_id)
-            return
+            return None, None
 
         if len(posts.rss_posts) == 0:
             q.feed_set_last_check_now(feed_id=feed.feed_id)
-            return
+            return None, None
 
         feed_update = q.set_feed_update(feed_id=feed.feed_id,
                                         last_post_id=posts.rss_posts[0].post_id,
                                         last_post_pub=posts.rss_posts[0].get_datetime())
-        return feed_update
+        return feed_update, posts
 
 
 def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
@@ -47,11 +50,11 @@ def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
     # If some exception occurs in the block, the transaction will be rolled back.
     # If an exception occurs, we want to be sure there is no retry out of extreme caution of sending duplicate emails
     # I'd rather things fail open in this matter
-    with QueryManager as q:
+    with QueryManager() as q:
         sub = q.fetch_and_update_uncurrent_sub(feed_id=feed_id, last_post_id=posts.rss_posts[0].post_id)
 
     if sub is None:
-        with QueryManager as q:
+        with QueryManager() as q:
             q.resolve_feed_notifications(feed_id=feed_id)
         return False
 
