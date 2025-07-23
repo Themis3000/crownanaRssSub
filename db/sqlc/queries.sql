@@ -23,7 +23,7 @@ UPDATE feeds
     last_completed = $4
 WHERE feed_id = $1;
 
--- name: set_last_check_now :exec
+-- name: feed_set_last_check_now :exec
 UPDATE feeds
     set last_update = NOW()
 WHERE feed_id = $1;
@@ -48,3 +48,28 @@ WHERE subscriber_id = $1;
 -- name: remove_subscription :exec
 DELETE FROM subscriptions
 WHERE subscriber_id = $1;
+
+-- name: get_feed_to_run :one
+SELECT * from feeds
+WHERE next_run > now() AND not unresolved_notification
+LIMIT 1
+FOR NO KEY UPDATE SKIP LOCKED;
+
+-- name: set_feed_update :exec
+UPDATE feeds
+    set last_update = now(),
+        last_post_id = $2,
+        last_post_pub = $3,
+        unresolved_notification = true
+WHERE feed_id = $1;
+
+-- name: resolve_feed_notifications :exec
+UPDATE feeds
+    set unresolved_notification = false
+WHERE feed_id = $1;
+
+-- name: fetch_and_update_uncurrent_sub :one
+UPDATE subscriptions
+    set last_post_id = $1
+WHERE last_post_id != $1 AND feed_id = $2
+RETURNING *;

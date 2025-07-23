@@ -1,3 +1,4 @@
 - Get amazon ses going
+  - Unsubscribe without notification on failure
 - Create rss worker
 - Finally, put it all behind an http server

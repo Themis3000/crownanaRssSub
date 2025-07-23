@@ -18,6 +18,7 @@ class Feed:
     last_post_id: str
     last_post_pub: datetime.datetime
     next_run: Optional[datetime.datetime]
+    unresolved_notification: bool
 
 
 @dataclasses.dataclass()
@@ -28,3 +29,4 @@ class Subscription:
     confirmation_code: float
     email: str
     signup_confirmed: bool
+    last_post_id: str

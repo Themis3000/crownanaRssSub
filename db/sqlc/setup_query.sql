@@ -14,7 +14,8 @@ create table feeds
         last_post_id   varchar(255)                             not null,
         last_post_pub  timestamp(0)                             not null,
 
-        next_run timestamp(0) generated always as ( last_completed + interval ) stored
+        next_run timestamp(0) generated always as ( last_completed + interval ) stored,
+        unresolved_notification boolean default FALSE not null
     );
 
 create index next_run_index
@@ -22,15 +23,16 @@ create index next_run_index
 
 create table subscriptions
     (
-        subscriber_id     serial                     not null
+        subscriber_id     serial                            not null
             constraint subscriptions_pk
                 primary key,
-        feed_id           integer                    not null
+        feed_id           integer                           not null
             references feeds(feed_id),
-        subscription_time timestamp(0) default NOW() not null,
-        confirmation_code float default random()     not null,
-        email             varchar(255)               not null,
-        signup_confirmed  boolean default false      not null,
+        subscription_time timestamp(0) default NOW()        not null,
+        confirmation_code float        default random()     not null,
+        email             varchar(255)                      not null,
+        signup_confirmed  boolean      default false        not null,
+        last_post_id      varchar(255) default ''           not null,
         UNIQUE (feed_id, email)
     );
 
