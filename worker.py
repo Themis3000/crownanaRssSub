@@ -1,14 +1,16 @@
 from db import QueryManager
+from db.sqlc.models import Feed
 from rss import get_posts, RssUpdates
 from cachetools import TTLCache, cached
 from email_service import email_serv
+from typing import Tuple
 
 
 # This isn't friendly to multiple concurrent workers
 # Things probably won't break technically speaking, but it will cause duplicate fetches to the rss endpoint
 # We don't want to get rate limited or get inconsistent responses...
-# This whole key thing is a hack. I'm going to replace it very soon.
-post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)), key=lambda **kwargs: kwargs["rss_url"])
+# We probably want to add the db as a cache layer for this if we scale to multiple workers.
+post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)))
 caching_get_posts = post_caching(get_posts)
 
 
@@ -17,24 +19,24 @@ def do_work():
     pass
 
 
-def do_feed_job() -> bool:
-    """Tries to find a feed in need of a refresh. Returns if job has been found"""
+def do_feed_job() -> Tuple[Feed, RssUpdates] | None:
+    """Tries to find a feed in need of a refresh. Returns feed and posts if feed was updated"""
     with QueryManager as q:
         feed = q.get_feed_to_run()
         posts = caching_get_posts(rss_url=feed.rss_url, last_id=feed.last_post_id, last_date=feed.last_post_pub)
 
         if len(posts.rss_posts) == 0:
             q.feed_set_last_check_now(feed_id=feed.feed_id)
-            return False
+            return
 
-        q.set_feed_update(feed_id=feed.feed_id,
-                          last_post_id=posts.rss_posts[0].post_id,
-                          last_post_pub=posts.rss_posts[0].get_datetime())
-        return True
+        feed_update = q.set_feed_update(feed_id=feed.feed_id,
+                                        last_post_id=posts.rss_posts[0].post_id,
+                                        last_post_pub=posts.rss_posts[0].get_datetime())
+        return feed_update
 
 
 def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
-    """Tries to find subscribers in need of mail under feed id. Returns if subscribers where found."""
+    """Tries to find subscribers in need of mail under feed id. Returns true if subscribers where found."""
     # It's very important that this context is exited right after fetching the sub.
     # Once it's exited it triggers a commit to the db.
     # If some exception occurs in the block, the transaction will be rolled back.
@@ -50,3 +52,6 @@ def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
 
     email_serv.notify_update(to_addr=sub.email, blog_update=posts)
     return True
+
+
+# def find_unfinished_feed() ->

@@ -55,7 +55,7 @@ WHERE next_run > now() AND not unresolved_notification
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED;
 
--- name: set_feed_update :exec
+-- name: set_feed_update :one
 UPDATE feeds
     set last_update = now(),
         last_notification_post_id = last_post_id,
@@ -63,7 +63,8 @@ UPDATE feeds
         last_post_id = $2,
         last_post_pub = $3,
         unresolved_notification = true
-WHERE feed_id = $1;
+WHERE feed_id = $1
+RETURNING *;
 
 -- name: resolve_feed_notifications :exec
 UPDATE feeds

@@ -91,7 +91,7 @@ WHERE feed_id = :p1
 """
 
 
-SET_FEED_UPDATE = """-- name: set_feed_update \\:exec
+SET_FEED_UPDATE = """-- name: set_feed_update \\:one
 UPDATE feeds
     set last_update = now(),
         last_notification_post_id = last_post_id,
@@ -100,6 +100,7 @@ UPDATE feeds
         last_post_pub = :p3,
         unresolved_notification = true
 WHERE feed_id = :p1
+RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, next_run
 """
 
 
@@ -280,8 +281,25 @@ class Querier:
     def resolve_feed_notifications(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(RESOLVE_FEED_NOTIFICATIONS), {"p1": feed_id})
 
-    def set_feed_update(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime) -> None:
-        self._conn.execute(sqlalchemy.text(SET_FEED_UPDATE), {"p1": feed_id, "p2": last_post_id, "p3": last_post_pub})
+    def set_feed_update(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime) -> Optional[models.Feed]:
+        row = self._conn.execute(sqlalchemy.text(SET_FEED_UPDATE), {"p1": feed_id, "p2": last_post_id, "p3": last_post_pub}).first()
+        if row is None:
+            return None
+        return models.Feed(
+            feed_id=row[0],
+            rss_url=row[1],
+            feed_name=row[2],
+            addition_date=row[3],
+            interval=row[4],
+            last_completed=row[5],
+            last_update=row[6],
+            last_post_id=row[7],
+            last_notification_post_id=row[8],
+            last_post_pub=row[9],
+            last_notification_pub=row[10],
+            unresolved_notification=row[11],
+            next_run=row[12],
+        )
 
     def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
         row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()
