@@ -11,8 +11,8 @@ SELECT * from feeds
 ORDER BY feed_id;
 
 -- name: create_feed :one
-INSERT INTO feeds (rss_url, feed_name, last_post_id, last_post_pub)
-VALUES ($1, $2, $3, $4)
+INSERT INTO feeds (rss_url, feed_name, last_post_id, last_notification_post_id, last_post_pub)
+VALUES ($1, $2, $3, $3, $4)
 RETURNING *;
 
 -- name: update_post :exec
@@ -59,6 +59,7 @@ FOR NO KEY UPDATE SKIP LOCKED;
 UPDATE feeds
     set last_update = now(),
         last_notification_post_id = last_post_id,
+        last_notification_pub = last_post_pub,
         last_post_id = $2,
         last_post_pub = $3,
         unresolved_notification = true

@@ -17,6 +17,7 @@ class Feed:
     last_post_id: str
     last_notification_post_id: str
     last_post_pub: datetime.datetime
+    last_notification_pub: datetime.datetime
     unresolved_notification: bool
     next_run: datetime.datetime
 
