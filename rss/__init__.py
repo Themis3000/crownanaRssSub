@@ -52,13 +52,15 @@ def get_posts(rss_url: str, last_id: str = None,
               last_date: datetime = datetime(year=1980, month=1, day=1, tzinfo=timezone.utc)) -> RssUpdates:
     """Fetches all new posts up to the last known post id or date"""
     try:
-        response = requests.get(rss_url)
+        response = requests.get(rss_url, stream=True)
+        response_text = response.raw.read(512000)
+        response.close()
     except requests.exceptions.RequestException:
         raise RssUnreachable()
     if not response.ok:
         raise RssUnreachable("Non-ok response")
 
-    rss = RSSParser.parse(response.text)
+    rss = RSSParser.parse(response_text.decode())
     rss_posts: List[RssPost] = []
     for item in rss.channel.items:
         post = RssPost(
