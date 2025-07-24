@@ -18,7 +18,8 @@ create table feeds
         last_post_id              varchar(255)                             not null,
         last_notification_post_id varchar(255)                             not null,
 --      The last post publish time, based on the rss feed
-        last_post_pub             timestamp(0)                             not null,
+--      timezone aware because this is user input.
+        last_post_pub             timestamptz(0)                           not null,
 --      The last post publish time from the previous notification
         last_notification_pub     timestamp(0) default NOW()               not null,
         unresolved_notification   boolean      default FALSE               not null,

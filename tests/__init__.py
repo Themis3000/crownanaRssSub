@@ -8,7 +8,7 @@ from multiprocessing import Process
 import os
 import email.utils
 from db import QueryManager, engine, setup_db
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
 from email_service import email_serv, MockEmail
 from worker import do_feed_job, find_unfinished_feed, do_mail_job
@@ -103,7 +103,8 @@ class RssTests(unittest.TestCase):
             feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
             self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed1.xml")
-            self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 1, 5, 0))
+            self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 1, 5, 0,
+                                                               tzinfo=timezone.utc))
             self.assertEqual(feed_data.last_post_id, '6c87aa676f44b6cc2dffd176c775263572e523c5')
 
     def test_add_feed_2(self):
@@ -112,7 +113,8 @@ class RssTests(unittest.TestCase):
             feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
             self.assertEqual(feed_data.feed_name, "LuvstarKei")
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed2.xml")
-            self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 13, 4, 8, 7))
+            self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 13, 4, 8, 7,
+                                                               tzinfo=timezone.utc))
             self.assertEqual(feed_data.last_post_id, '92b220bab408cb4d3e4f0b8b788139df4845cfb5')
 
     def test_unique(self):
