@@ -29,11 +29,24 @@ def start_http():
             return Response(f.read(), media_type="application/xml")
 
     @app.post("/set_mapping")
-    def read_mapping(name: str, location: str):
+    def add_mapping(name: str, location: str):
         mappings[name] = location
         return Response("success", status_code=201)
 
+    @app.post("/reset_mappings")
+    def reset_mappings():
+        mappings.clear()
+        return Response("success")
+
     uvicorn.run(app, host="127.0.0.1", port=8010)
+
+
+def clear_mappings():
+    requests.post("http://127.0.0.1:8010/reset_mappings")
+
+
+def set_mapping(name, location):
+    requests.post(f"http://127.0.0.1:8010/set_mapping?name={name}&location={location}")
 
 
 class RssTests(unittest.TestCase):
@@ -60,6 +73,7 @@ class RssTests(unittest.TestCase):
         conn.commit()
         conn.close()
         email_serv.clear_logs()
+        clear_mappings()
 
     def test_get_all_feed1_posts(self):
         posts = get_posts("http://127.0.0.1:8010/feed1.xml")
