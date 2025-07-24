@@ -231,3 +231,19 @@ class RssTests(unittest.TestCase):
         feed, rss_updates = do_feed_job()
         self.assertIsNotNone(feed)
         self.assertIsNotNone(rss_updates)
+
+    def test_worker_mail_job(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+        set_mapping("feed1.xml", "feed1_updated.xml")
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+
+        feed, rss_updates = do_feed_job()
+        job_completed = do_mail_job(feed_id=feed.feed_id, posts=rss_updates)
+        self.assertTrue(job_completed)
+
+        notification_call = email_serv.logged_calls[-1]
+        self.assertEqual("test@test.com", notification_call["to_addr"])
+        self.assertEqual(rss_updates, notification_call["blog_update"])

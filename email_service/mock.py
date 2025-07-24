@@ -30,7 +30,7 @@ class MockEmail(BaseEmail):
         self.logged_calls.append(kwargs)
         super().notify_subscribe(**kwargs)
 
-    def notify_update(self, to_addr: str, **kwargs):
+    def notify_update(self, **kwargs):
         self.logged_calls.append(kwargs)
         super().notify_update(**kwargs)
 
