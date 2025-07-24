@@ -241,9 +241,16 @@ class RssTests(unittest.TestCase):
             q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
 
         feed, rss_updates = do_feed_job()
+        self.assertTrue(feed.unresolved_notification)
         job_completed = do_mail_job(feed_id=feed.feed_id, posts=rss_updates)
         self.assertTrue(job_completed)
 
         notification_call = email_serv.logged_calls[-1]
         self.assertEqual("test@test.com", notification_call["to_addr"])
         self.assertEqual(rss_updates, notification_call["blog_update"])
+
+        job_completed = do_mail_job(feed_id=feed.feed_id, posts=rss_updates)
+        self.assertFalse(job_completed)
+        with QueryManager() as q:
+            feed = q.get_feed(feed_id=feed.feed_id)
+        self.assertFalse(feed.unresolved_notification)
