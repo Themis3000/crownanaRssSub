@@ -1,11 +1,11 @@
 import unittest
 import email_validator.exceptions_types
+import requests
 import sqlalchemy
 from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
     InvalidConfirmationCode, InvalidSubscriber
 from rss import get_posts
 from multiprocessing import Process
-import os
 import email.utils
 from db import QueryManager, engine, setup_db
 from datetime import datetime, timezone
@@ -15,11 +15,25 @@ from worker import do_feed_job, find_unfinished_feed, do_mail_job
 
 
 def start_http():
-    from http.server import SimpleHTTPRequestHandler, HTTPServer
-    os.chdir("./tests/test_feeds")
-    # noinspection PyTypeChecker
-    server = HTTPServer(("127.0.0.1", 8010), SimpleHTTPRequestHandler)
-    server.serve_forever()
+    from fastapi import FastAPI, Response
+    import uvicorn
+
+    app = FastAPI()
+    mappings = {}
+
+    @app.get("/{file_name}")
+    def read_file(file_name: str):
+        if file_name in mappings:
+            file_name = mappings[file_name]
+        with open(f"./tests/test_feeds/{file_name}", "r", encoding="utf-8") as f:
+            return Response(f.read(), media_type="application/xml")
+
+    @app.post("/set_mapping")
+    def read_mapping(name: str, location: str):
+        mappings[name] = location
+        return Response("success", status_code=201)
+
+    uvicorn.run(app, host="127.0.0.1", port=8010)
 
 
 class RssTests(unittest.TestCase):
