@@ -224,6 +224,7 @@ class RssTests(unittest.TestCase):
         feed, rss_updates = do_feed_job()
         self.assertIsNone(feed)
 
+        set_mapping("feed1.xml", "feed1_updated.xml")
         with QueryManager() as q:
             q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
 
