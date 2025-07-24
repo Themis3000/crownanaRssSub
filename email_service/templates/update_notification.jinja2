@@ -13,7 +13,7 @@
 </head>
 <body>
     <h2>A new post has been posted to {{ blog_update.blog_name }}!</h2>
-    {% for post in rss_posts %}
+    {% for post in blog_update.rss_posts %}
         <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.get_readable_date() }}</b><br>
     {% endfor %}
     <footer>

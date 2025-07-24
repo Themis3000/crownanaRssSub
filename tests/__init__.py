@@ -269,3 +269,4 @@ class RssTests(unittest.TestCase):
         self.assertEqual("http://127.0.0.1:8010/feed1.xml", feed.rss_url)
         self.assertTrue(feed.unresolved_notification)
         self.assertEqual("Creative flash photos", rss_updates.rss_posts[0].title)
+        self.assertEqual(1, len(rss_updates.rss_posts))

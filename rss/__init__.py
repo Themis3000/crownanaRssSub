@@ -37,7 +37,7 @@ class RssPost:
 
     def get_readable_date(self) -> str:
         date = self.get_datetime()
-        return date.strftime("%b %d, $Y")
+        return date.strftime("%b %d, %Y")
 
 
 @dataclasses.dataclass()
