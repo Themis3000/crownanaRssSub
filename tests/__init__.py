@@ -254,3 +254,18 @@ class RssTests(unittest.TestCase):
         with QueryManager() as q:
             feed = q.get_feed(feed_id=feed.feed_id)
         self.assertFalse(feed.unresolved_notification)
+
+    def test_find_unfinished_feed(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+        set_mapping("feed1.xml", "feed1_updated.xml")
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+        do_feed_job()
+
+        feed, rss_updates = find_unfinished_feed()
+        self.assertIsNotNone(feed)
+        self.assertEqual("http://127.0.0.1:8010/feed1.xml", feed.rss_url)
+        self.assertTrue(feed.unresolved_notification)
+        self.assertEqual("Creative flash photos", rss_updates.rss_posts[0].title)

@@ -73,6 +73,6 @@ def find_unfinished_feed() -> Tuple[Feed, RssUpdates] | None:
 
     posts = caching_get_posts(rss_url=feed.rss_url,
                               last_id=feed.last_notification_post_id,
-                              last_date=feed.last_notification_pub)
+                              last_date=feed.last_post_pub)
 
     return feed, posts
