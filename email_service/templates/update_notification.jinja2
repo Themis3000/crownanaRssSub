@@ -8,14 +8,26 @@
         .advert {
             font-size: 8pt;
         }
+        .body-text {
+            font-size: 16pt;
+        }
+        footer {
+            color: gray;
+        }
+        body {
+            text-align: center;
+            font-family: Calibri, sans-serif;
+        }
     </style>
     <title></title>
 </head>
 <body>
-    <h2>A new post has been posted to {{ blog_update.blog_name }}!</h2>
-    {% for post in blog_update.rss_posts %}
-        <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.get_readable_date() }}</b><br>
-    {% endfor %}
+    <h1>A new post has been posted to {{ blog_update.blog_name }}!</h1>
+    <div class="body-text">
+        {% for post in blog_update.rss_posts %}
+            <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.get_readable_date() }}</b><br>
+        {% endfor %}
+    </div>
     <footer>
         <p class="unsub">This email was sent to you because you subscribed to {{ blog_update.blog_name }} email updates.
             Click <a href="">here</a> if you wish to unsubscribe</p>
