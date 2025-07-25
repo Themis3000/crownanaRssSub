@@ -4,6 +4,7 @@ from rss import get_posts, RssUpdates
 from cachetools import TTLCache, cached
 from email_service import email_serv
 from typing import Tuple
+import time
 
 
 # This isn't friendly to multiple concurrent workers
@@ -16,7 +17,21 @@ caching_get_posts = post_caching(get_posts)
 
 # Handles doing work and the priority of what work to do. Will run forever.
 def do_work():
-    pass
+    while True:
+        feed, rss_updates = do_feed_job()
+
+        if feed is None:
+            feed, rss_updates = do_feed_job()
+
+        if feed is None:
+            time.sleep(30)
+            continue
+
+        # Do up to 200 mail jobs at a time. If there's more it can be completed later.
+        for _ in range(200):
+            completed_job = do_mail_job(feed_id=feed.feed_id, posts=rss_updates.rss_posts)
+            if not completed_job:
+                break
 
 
 def do_feed_job() -> Tuple[Feed, RssUpdates] | Tuple[None, None]:
