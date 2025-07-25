@@ -1,3 +1,6 @@
+- Learn postgres advisory locks
+  - Can this be used to do batch jobs easier?
+  - If not, implement batch jobs another way. Batching is a must
 - Unsubscribe without notification on bounce
 - Create rss worker
 - Finally, put it all behind an http server
