@@ -24,6 +24,7 @@ def do_work():
             feed, rss_updates = do_feed_job()
 
         if feed is None:
+            # There is no job to do. Wait 30 seconds before checking again...
             time.sleep(30)
             continue
 
