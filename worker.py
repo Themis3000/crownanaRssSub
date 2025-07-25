@@ -21,7 +21,7 @@ def do_work():
         feed, rss_updates = do_feed_job()
 
         if feed is None:
-            feed, rss_updates = do_feed_job()
+            feed, rss_updates = find_unfinished_feed()
 
         if feed is None:
             # There is no job to do. Wait 30 seconds before checking again...
