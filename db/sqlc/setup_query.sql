@@ -29,9 +29,8 @@ create table feed_history
         link            varchar(2000)              not null,
         post_date       timestamptz(0)             not null,
         collection_date timestamp(0) default NOW() not null,
-        unique_id       varchar(255)               not null
-            constraint unique_id_key
-                unique
+        unique_id       varchar(255)               not null,
+        UNIQUE (unique_id, feed_id)
 );
 
 create index feed_history_post_date_index

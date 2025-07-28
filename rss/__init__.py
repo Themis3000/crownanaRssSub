@@ -54,9 +54,11 @@ class RssInvalid(Exception):
     pass
 
 
-def get_posts(rss_url: str, last_id: str = None,
-              last_date: datetime = datetime(year=1980, month=1, day=1, tzinfo=timezone.utc)) -> RssUpdates:
+def get_posts(rss_url: str, last_id: str = None, last_date: datetime = None) -> RssUpdates:
     """Fetches all new posts up to the last known post id or date"""
+    if last_date is None:
+        last_date = datetime(year=1980, month=1, day=1, tzinfo=timezone.utc)
+
     try:
         response = requests.get(rss_url, stream=True)
         response_iterator = response.iter_content(512000)

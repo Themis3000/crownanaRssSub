@@ -66,4 +66,21 @@ INSERT INTO feed_history (feed_id, title, link, post_date, unique_id)
 -- name: mark_feed_updates :exec
 UPDATE subscriptions
     SET has_notification_pending = true
-WHERE feed_id = $1 AND signup_confirmed = false;
+WHERE feed_id = $1 AND signup_confirmed = true;
+
+-- name: get_feed_history :many
+SELECT * FROM feed_history
+WHERE feed_id = $1 AND collection_date > $2
+LIMIT COALESCE(sqlc.narg('limit')::int, 20);
+
+-- name: get_current_post :one
+SELECT * FROM feed_history
+WHERE feed_id = $1
+ORDER BY post_date desc
+LIMIT 1;
+
+-- name: post_id_exists :one
+SELECT EXISTS(
+    SELECT FROM feed_history
+    WHERE feed_id = $1 AND unique_id = $2
+);

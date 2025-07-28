@@ -70,15 +70,30 @@ WHERE rss_url = :p1
 """
 
 
+GET_CURRENT_POST = """-- name: get_current_post \\:one
+SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id FROM feed_history
+WHERE feed_id = :p1
+ORDER BY post_date desc
+LIMIT 1
+"""
+
+
 GET_FEED = """-- name: get_feed \\:one
 SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
-WHERE feed_id = :p1 LIMIT 1
+WHERE feed_id = :p1
 """
 
 
 GET_FEED_BY_RSS = """-- name: get_feed_by_rss \\:one
 SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
 WHERE rss_url = :p1 LIMIT 1
+"""
+
+
+GET_FEED_HISTORY = """-- name: get_feed_history \\:many
+SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id FROM feed_history
+WHERE feed_id = :p1 AND collection_date > :p2
+LIMIT COALESCE(:p3\\:\\:int, 20)
 """
 
 
@@ -105,7 +120,15 @@ ORDER BY feed_id
 MARK_FEED_UPDATES = """-- name: mark_feed_updates \\:exec
 UPDATE subscriptions
     SET has_notification_pending = true
-WHERE feed_id = :p1 AND signup_confirmed = false
+WHERE feed_id = :p1 AND signup_confirmed = true
+"""
+
+
+POST_ID_EXISTS = """-- name: post_id_exists \\:one
+SELECT EXISTS(
+    SELECT FROM feed_history
+    WHERE feed_id = :p1 AND unique_id = :p2
+)
 """
 
 
@@ -175,6 +198,20 @@ class Querier:
     def feed_update_now(self, *, rss_url: str) -> None:
         self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
 
+    def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
+        row = self._conn.execute(sqlalchemy.text(GET_CURRENT_POST), {"p1": feed_id}).first()
+        if row is None:
+            return None
+        return models.FeedHistory(
+            history_id=row[0],
+            feed_id=row[1],
+            title=row[2],
+            link=row[3],
+            post_date=row[4],
+            collection_date=row[5],
+            unique_id=row[6],
+        )
+
     def get_feed(self, *, feed_id: int) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(GET_FEED), {"p1": feed_id}).first()
         if row is None:
@@ -204,6 +241,19 @@ class Querier:
             consecutive_failures=row[6],
             next_run=row[7],
         )
+
+    def get_feed_history(self, *, feed_id: int, collection_date: datetime.datetime, limit: Optional[int]) -> Iterator[models.FeedHistory]:
+        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY), {"p1": feed_id, "p2": collection_date, "p3": limit})
+        for row in result:
+            yield models.FeedHistory(
+                history_id=row[0],
+                feed_id=row[1],
+                title=row[2],
+                link=row[3],
+                post_date=row[4],
+                collection_date=row[5],
+                unique_id=row[6],
+            )
 
     def get_feed_to_run(self) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(GET_FEED_TO_RUN)).first()
@@ -251,6 +301,12 @@ class Querier:
 
     def mark_feed_updates(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(MARK_FEED_UPDATES), {"p1": feed_id})
+
+    def post_id_exists(self, *, feed_id: int, unique_id: str) -> Optional[bool]:
+        row = self._conn.execute(sqlalchemy.text(POST_ID_EXISTS), {"p1": feed_id, "p2": unique_id}).first()
+        if row is None:
+            return None
+        return row[0]
 
     def remove_subscription(self, *, subscriber_id: int) -> None:
         self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})

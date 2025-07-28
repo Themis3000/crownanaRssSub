@@ -1,7 +1,8 @@
 import os
 from db import Querier
 from email_service import email_serv
-from rss import get_posts
+from rss import get_posts, RssUpdates
+from db.sqlc.queries import add_feed_historyParams
 
 if os.environ.get("testing") == "true":
     base_url = "http://127.0.0.1:8080"
@@ -13,10 +14,28 @@ class EmptyRSS(Exception):
     pass
 
 
-def get_and_store_posts(q: Querier, rss_url: str):
-    feed = q.get_feed_by_rss(rss_url=rss_url)
-    posts = get_posts(rss_url)
+def collect_and_fetch_posts(q: Querier, rss_url: str, feed_id: int) -> RssUpdates:
+    """Collects new posts and stores them in the database"""
+    last_post = q.get_current_post(feed_id=feed_id)
+    if last_post is None:
+        posts = get_posts(rss_url)
+    else:
+        posts = get_posts(rss_url=rss_url, last_id=last_post.unique_id, last_date=last_post.post_date)
 
+    for post in posts.rss_posts:
+        if q.post_id_exists(feed_id=feed_id, unique_id=post.post_id):
+            # Duplicate post id already exists. What should I do in such a case?
+            # This could be caused by a duplicate guid or title (if no guid is present)
+            continue
+        q.add_feed_history(add_feed_historyParams(
+            feed_id=feed_id,
+            post_date=post.get_datetime(),
+            title=post.title,
+            unique_id=post.post_id,
+            link=post.link
+        ))
+
+    return posts
 
 
 def validate_and_add_feed(q: Querier, rss_url: str):

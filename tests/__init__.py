@@ -3,7 +3,7 @@ import sqlalchemy
 from multiprocessing import Process
 from db import engine, setup_db
 from email_service import email_serv
-from test_http import start_http, set_mapping, clear_mappings
+from .test_http import start_http, set_mapping, clear_mappings
 
 
 class RssTests(unittest.TestCase):
