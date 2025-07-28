@@ -1,16 +1,12 @@
+import time
 import unittest
-import email_validator.exceptions_types
 import sqlalchemy
-from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
-    InvalidConfirmationCode, InvalidSubscriber
+from utils import validate_and_add_feed
 from rss import get_posts
 from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
-from datetime import datetime, timezone
-from sqlalchemy.exc import IntegrityError
-from email_service import email_serv, MockEmail
-from worker import do_feed_job, find_unfinished_feed, do_mail_job
+from email_service import email_serv
 from .test_http import start_http, set_mapping, clear_mappings
 
 
@@ -19,6 +15,8 @@ class RssTests(unittest.TestCase):
     def setUpClass(cls):
         cls.http_process = Process(target=start_http)
         cls.http_process.start()
+        # Yeah, I know.
+        time.sleep(1)
 
     @classmethod
     def tearDownClass(cls):
