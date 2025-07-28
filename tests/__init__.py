@@ -90,16 +90,14 @@ class RssTests(unittest.TestCase):
         posts = get_posts("http://127.0.0.1:8010/feed2.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 0)
 
-    # def test_add_feed_1(self):
-    #     with QueryManager() as q:
-    #         validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
-    #         feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
-    #         self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
-    #         self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed1.xml")
-    #         self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 1, 5, 0,
-    #                                                            tzinfo=timezone.utc))
-    #         self.assertEqual(feed_data.last_post_id, '6c87aa676f44b6cc2dffd176c775263572e523c5')
-    #
+    def test_add_feed_1(self):
+        with QueryManager() as q:
+            validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
+            feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
+            self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
+            self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed1.xml")
+            # Need to also validate stored history too.
+
     # def test_add_feed_2(self):
     #     with QueryManager() as q:
     #         validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
