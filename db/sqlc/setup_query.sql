@@ -7,22 +7,9 @@ create table feeds
             constraint rss_url_key
                 unique,
         feed_name                 varchar(2000)                            not null,
---      When this feed was added:
         addition_date             timestamp(0) default NOW()               not null,
---      How often to refresh the feed:
         interval                  interval     default interval '12 hours' not null,
---      The last time the feed was run:
         last_completed            timestamp(0) default NOW()               not null,
---      the last time the feed had an update:
-        last_update               timestamp(0) default NOW()               not null,
-        last_post_id              varchar(255)                             not null,
-        last_notification_post_id varchar(255)                             not null,
---      The last post publish time, based on the rss feed
---      timezone aware because this is user input.
-        last_post_pub             timestamptz(0)                           not null,
---      The last post publish time from the previous notification
-        last_notification_pub     timestamp(0) default NOW()               not null,
-        unresolved_notification   boolean      default FALSE               not null,
         consecutive_failures      integer      default 0                   not null,
 
         next_run                  timestamp(0) generated always as ( last_completed + interval ) stored not null
@@ -31,18 +18,39 @@ create table feeds
 create index next_run_index
     on feeds (next_run desc);
 
+create table feed_history
+    (
+        history_id      serial not null            not null
+            constraint feed_history_pk
+                primary key,
+        feed_id         integer                    not null
+            references feeds(feed_id),
+        title           varchar(2000)              not null,
+        link            varchar(2000)              not null,
+        post_date       timestamptz(0)             not null,
+        collection_date timestamp(0) default NOW() not null,
+        unique_id       varchar(255)               not null
+            constraint unique_id_key
+                unique
+);
+
+create index feed_history_post_date_index
+    on feed_history (post_date desc);
+
 create table subscriptions
     (
-        subscriber_id     serial                            not null
+        subscriber_id            serial                            not null
             constraint subscriptions_pk
                 primary key,
-        feed_id           integer                           not null
+        feed_id                  integer                           not null
             references feeds(feed_id),
-        subscription_time timestamp(0) default NOW()        not null,
-        confirmation_code float        default random()     not null,
-        email             varchar(255)                      not null,
-        signup_confirmed  boolean      default false        not null,
-        last_post_id      varchar(255) default ''           not null,
+        subscription_time        timestamp(0) default NOW()        not null,
+        confirmation_code        float        default random()     not null,
+        email                    varchar(255)                      not null,
+        signup_confirmed         boolean      default false        not null,
+        last_post_notify         integer
+            references feed_history(history_id),
+        has_notification_pending boolean      default false        not null,
         UNIQUE (feed_id, email)
     );
 
@@ -52,3 +60,6 @@ create index subscriptions_feed_id_index
 create index email_not_subbed_index
     on subscriptions (email)
     where not subscriptions.signup_confirmed;
+
+create index subscriptions_signup_index
+    on subscriptions (signup_confirmed);

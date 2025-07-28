@@ -3,6 +3,7 @@
 #   sqlc v1.29.0
 import dataclasses
 import datetime
+from typing import Optional
 
 
 @dataclasses.dataclass()
@@ -13,14 +14,19 @@ class Feed:
     addition_date: datetime.datetime
     interval: datetime.timedelta
     last_completed: datetime.datetime
-    last_update: datetime.datetime
-    last_post_id: str
-    last_notification_post_id: str
-    last_post_pub: datetime.datetime
-    last_notification_pub: datetime.datetime
-    unresolved_notification: bool
     consecutive_failures: int
     next_run: datetime.datetime
+
+
+@dataclasses.dataclass()
+class FeedHistory:
+    history_id: int
+    feed_id: int
+    title: str
+    link: str
+    post_date: datetime.datetime
+    collection_date: datetime.datetime
+    unique_id: str
 
 
 @dataclasses.dataclass()
@@ -31,4 +37,5 @@ class Subscription:
     confirmation_code: float
     email: str
     signup_confirmed: bool
-    last_post_id: str
+    last_post_notify: Optional[int]
+    has_notification_pending: bool

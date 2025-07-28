@@ -2,6 +2,7 @@
 # versions:
 #   sqlc v1.29.0
 # source: queries.sql
+import dataclasses
 import datetime
 from typing import Iterator, Optional
 
@@ -10,10 +11,25 @@ import sqlalchemy
 from . import models
 
 
+ADD_FEED_HISTORY = """-- name: add_feed_history \\:exec
+INSERT INTO feed_history (feed_id, title, link, post_date, unique_id)
+    VALUES (:p1, :p2, :p3, :p4, :p5)
+"""
+
+
+@dataclasses.dataclass()
+class add_feed_historyParams:
+    feed_id: int
+    title: str
+    link: str
+    post_date: datetime.datetime
+    unique_id: str
+
+
 ADD_SUBSCRIBER = """-- name: add_subscriber \\:one
 INSERT INTO subscriptions (feed_id, email)
 VALUES (:p1, :p2)
-returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_id
+returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending
 """
 
 
@@ -25,9 +41,9 @@ WHERE subscriber_id = :p1
 
 
 CREATE_FEED = """-- name: create_feed \\:one
-INSERT INTO feeds (rss_url, feed_name, last_post_id, last_notification_post_id, last_post_pub)
-VALUES (:p1, :p2, :p3, :p3, :p4)
-RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run
+INSERT INTO feeds (rss_url, feed_name)
+VALUES (:p1, :p2)
+RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run
 """
 
 
@@ -54,50 +70,42 @@ WHERE rss_url = :p1
 """
 
 
-FETCH_AND_UPDATE_UNCURRENT_SUB = """-- name: fetch_and_update_uncurrent_sub \\:one
-UPDATE subscriptions
-    set last_post_id = :p1
-WHERE last_post_id != :p1 AND feed_id = :p2
-RETURNING subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_id
-"""
-
-
 GET_FEED = """-- name: get_feed \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
 WHERE feed_id = :p1 LIMIT 1
 """
 
 
 GET_FEED_BY_RSS = """-- name: get_feed_by_rss \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
 WHERE rss_url = :p1 LIMIT 1
 """
 
 
 GET_FEED_TO_RUN = """-- name: get_feed_to_run \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
-WHERE now() > next_run AND unresolved_notification = false
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
+WHERE now() > next_run
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED
 """
 
 
 GET_SUBSCRIBER = """-- name: get_subscriber \\:one
-SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_id from subscriptions
+SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending from subscriptions
 WHERE subscriber_id = :p1 LIMIT 1
 """
 
 
-GET_UNRESOLVED_FEED = """-- name: get_unresolved_feed \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
-WHERE unresolved_notification
-LIMIT 1
+LIST_FEEDS = """-- name: list_feeds \\:many
+SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
+ORDER BY feed_id
 """
 
 
-LIST_FEEDS = """-- name: list_feeds \\:many
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run from feeds
-ORDER BY feed_id
+MARK_FEED_UPDATES = """-- name: mark_feed_updates \\:exec
+UPDATE subscriptions
+    SET has_notification_pending = true
+WHERE feed_id = :p1 AND signup_confirmed = false
 """
 
 
@@ -107,35 +115,23 @@ WHERE subscriber_id = :p1
 """
 
 
-RESOLVE_FEED_NOTIFICATIONS = """-- name: resolve_feed_notifications \\:exec
-UPDATE feeds
-    set unresolved_notification = false
-WHERE feed_id = :p1
-"""
-
-
-SET_FEED_UPDATE = """-- name: set_feed_update \\:one
-UPDATE feeds
-    set last_update = now(),
-        last_completed = now(),
-        last_notification_post_id = last_post_id,
-        last_notification_pub = last_post_pub,
-        last_post_id = :p2,
-        last_post_pub = :p3,
-        unresolved_notification = true
-WHERE feed_id = :p1
-RETURNING feed_id, rss_url, feed_name, addition_date, interval, last_completed, last_update, last_post_id, last_notification_post_id, last_post_pub, last_notification_pub, unresolved_notification, consecutive_failures, next_run
-"""
-
-
 SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
-SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_id FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
+SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
 """
 
 
 class Querier:
     def __init__(self, conn: sqlalchemy.engine.Connection):
         self._conn = conn
+
+    def add_feed_history(self, arg: add_feed_historyParams) -> None:
+        self._conn.execute(sqlalchemy.text(ADD_FEED_HISTORY), {
+            "p1": arg.feed_id,
+            "p2": arg.title,
+            "p3": arg.link,
+            "p4": arg.post_date,
+            "p5": arg.unique_id,
+        })
 
     def add_subscriber(self, *, feed_id: int, email: str) -> Optional[models.Subscription]:
         row = self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email}).first()
@@ -148,19 +144,15 @@ class Querier:
             confirmation_code=row[3],
             email=row[4],
             signup_confirmed=row[5],
-            last_post_id=row[6],
+            last_post_notify=row[6],
+            has_notification_pending=row[7],
         )
 
     def confirm_subscription(self, *, subscriber_id: int) -> None:
         self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id})
 
-    def create_feed(self, *, rss_url: str, feed_name: str, last_post_id: str, last_post_pub: datetime.datetime) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {
-            "p1": rss_url,
-            "p2": feed_name,
-            "p3": last_post_id,
-            "p4": last_post_pub,
-        }).first()
+    def create_feed(self, *, rss_url: str, feed_name: str) -> Optional[models.Feed]:
+        row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {"p1": rss_url, "p2": feed_name}).first()
         if row is None:
             return None
         return models.Feed(
@@ -170,14 +162,8 @@ class Querier:
             addition_date=row[3],
             interval=row[4],
             last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
+            consecutive_failures=row[6],
+            next_run=row[7],
         )
 
     def feed_set_last_check_now(self, *, feed_id: int) -> None:
@@ -188,20 +174,6 @@ class Querier:
 
     def feed_update_now(self, *, rss_url: str) -> None:
         self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
-
-    def fetch_and_update_uncurrent_sub(self, *, last_post_id: str, feed_id: int) -> Optional[models.Subscription]:
-        row = self._conn.execute(sqlalchemy.text(FETCH_AND_UPDATE_UNCURRENT_SUB), {"p1": last_post_id, "p2": feed_id}).first()
-        if row is None:
-            return None
-        return models.Subscription(
-            subscriber_id=row[0],
-            feed_id=row[1],
-            subscription_time=row[2],
-            confirmation_code=row[3],
-            email=row[4],
-            signup_confirmed=row[5],
-            last_post_id=row[6],
-        )
 
     def get_feed(self, *, feed_id: int) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(GET_FEED), {"p1": feed_id}).first()
@@ -214,14 +186,8 @@ class Querier:
             addition_date=row[3],
             interval=row[4],
             last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
+            consecutive_failures=row[6],
+            next_run=row[7],
         )
 
     def get_feed_by_rss(self, *, rss_url: str) -> Optional[models.Feed]:
@@ -235,14 +201,8 @@ class Querier:
             addition_date=row[3],
             interval=row[4],
             last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
+            consecutive_failures=row[6],
+            next_run=row[7],
         )
 
     def get_feed_to_run(self) -> Optional[models.Feed]:
@@ -256,14 +216,8 @@ class Querier:
             addition_date=row[3],
             interval=row[4],
             last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
+            consecutive_failures=row[6],
+            next_run=row[7],
         )
 
     def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
@@ -277,28 +231,8 @@ class Querier:
             confirmation_code=row[3],
             email=row[4],
             signup_confirmed=row[5],
-            last_post_id=row[6],
-        )
-
-    def get_unresolved_feed(self) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(GET_UNRESOLVED_FEED)).first()
-        if row is None:
-            return None
-        return models.Feed(
-            feed_id=row[0],
-            rss_url=row[1],
-            feed_name=row[2],
-            addition_date=row[3],
-            interval=row[4],
-            last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
+            last_post_notify=row[6],
+            has_notification_pending=row[7],
         )
 
     def list_feeds(self) -> Iterator[models.Feed]:
@@ -311,42 +245,15 @@ class Querier:
                 addition_date=row[3],
                 interval=row[4],
                 last_completed=row[5],
-                last_update=row[6],
-                last_post_id=row[7],
-                last_notification_post_id=row[8],
-                last_post_pub=row[9],
-                last_notification_pub=row[10],
-                unresolved_notification=row[11],
-                consecutive_failures=row[12],
-                next_run=row[13],
+                consecutive_failures=row[6],
+                next_run=row[7],
             )
+
+    def mark_feed_updates(self, *, feed_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(MARK_FEED_UPDATES), {"p1": feed_id})
 
     def remove_subscription(self, *, subscriber_id: int) -> None:
         self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})
-
-    def resolve_feed_notifications(self, *, feed_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(RESOLVE_FEED_NOTIFICATIONS), {"p1": feed_id})
-
-    def set_feed_update(self, *, feed_id: int, last_post_id: str, last_post_pub: datetime.datetime) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(SET_FEED_UPDATE), {"p1": feed_id, "p2": last_post_id, "p3": last_post_pub}).first()
-        if row is None:
-            return None
-        return models.Feed(
-            feed_id=row[0],
-            rss_url=row[1],
-            feed_name=row[2],
-            addition_date=row[3],
-            interval=row[4],
-            last_completed=row[5],
-            last_update=row[6],
-            last_post_id=row[7],
-            last_notification_post_id=row[8],
-            last_post_pub=row[9],
-            last_notification_pub=row[10],
-            unresolved_notification=row[11],
-            consecutive_failures=row[12],
-            next_run=row[13],
-        )
 
     def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
         row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()

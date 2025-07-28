@@ -13,6 +13,12 @@ class EmptyRSS(Exception):
     pass
 
 
+def get_and_store_posts(q: Querier, rss_url: str):
+    feed = q.get_feed_by_rss(rss_url=rss_url)
+    posts = get_posts(rss_url)
+
+
+
 def validate_and_add_feed(q: Querier, rss_url: str):
     feed = get_posts(rss_url)
     if len(feed.rss_posts) == 0:
