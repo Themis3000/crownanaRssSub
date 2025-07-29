@@ -3,7 +3,7 @@ import unittest
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 
-from utils import validate_and_add_feed
+from utils import validate_and_add_feed, add_subscriber
 from rss import get_posts
 from multiprocessing import Process
 import email.utils
@@ -126,22 +126,17 @@ class RssTests(unittest.TestCase):
             add_feed()
             self.assertRaises(IntegrityError, add_feed)
 
-    def test_testing_mode(self):
+    def add_subscriber(self):
         self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
-    #
-    # def test_add_subscriber(self):
-    #     if not isinstance(email_serv, MockEmail):
-    #         raise Exception("The email service is not in testing mode.")
-    #
-    #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         sub_email = email_serv.email_log[0]
-    #         sub_email_call = email_serv.logged_calls[0]
-    #         self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
-    #         confirm_url = f"http://127.0.0.1:8080/sub_confirm?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
-    #         self.assertEqual(sub_email_call['confirm_url'], confirm_url)
-    #         self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
-    #         self.assertEqual(sub_email.to, "test@test.com")
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub_email = email_serv.email_log[0]
+            sub_email_call = email_serv.logged_calls[0]
+            self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
+            confirm_url = f"http://127.0.0.1:8080/sub_confirm?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
+            self.assertEqual(sub_email_call['confirm_url'], confirm_url)
+            self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
+            self.assertEqual(sub_email.to, "test@test.com")
     #
     # def test_confirm_subscription(self):
     #     with QueryManager() as q:
