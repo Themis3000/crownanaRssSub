@@ -7,10 +7,6 @@ from typing import Tuple
 import time
 
 
-# This isn't friendly to multiple concurrent workers
-# Things probably won't break technically speaking, but it will cause duplicate fetches to the rss endpoint
-# We don't want to get rate limited or get inconsistent responses...
-# We probably want to add the db as a cache layer for this if we scale to multiple workers.
 post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)))
 caching_get_posts = post_caching(get_posts)
 
@@ -35,28 +31,26 @@ def do_work():
                 break
 
 
-def do_feed_job() -> Tuple[Feed, RssUpdates] | Tuple[None, None]:
-    """Tries to find a feed in need of a refresh. Returns feed and posts if feed was updated"""
+def do_feed_job() -> bool:
+    """Tries to find a feed in need of a refresh. Returns if feed was updated"""
     with QueryManager() as q:
-        feed = q.get_feed_to_run()
+        feed_job = q.get_feed_to_run()
 
-        if feed is None:
-            return None, None
+        if feed_job is None:
+            return False
 
         try:
-            posts = caching_get_posts(rss_url=feed.rss_url, last_id=feed.last_post_id, last_date=feed.last_post_pub)
+            posts = get_posts(rss_url=feed_job.rss_url, last_id=feed_job.unique_id, last_date=feed_job.post_date)
         except Exception:
-            q.feed_set_last_fail_now(feed_id=feed.feed_id)
-            return None, None
+            q.feed_set_last_fail_now(feed_id=feed_job.feed_id)
+            return False
 
         if len(posts.rss_posts) == 0:
-            q.feed_set_last_check_now(feed_id=feed.feed_id)
-            return None, None
+            q.feed_set_last_check_now(feed_id=feed_job.feed_id)
+            return False
 
-        feed_update = q.set_feed_update(feed_id=feed.feed_id,
-                                        last_post_id=posts.rss_posts[0].post_id,
-                                        last_post_pub=posts.rss_posts[0].get_datetime())
-        return feed_update, posts
+        q.mark_feed_updates(feed_id=feed_job.feed_id)
+        return True
 
 
 def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:

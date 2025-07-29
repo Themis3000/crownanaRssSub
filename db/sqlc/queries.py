@@ -107,11 +107,21 @@ LIMIT COALESCE(:p3\\:\\:int, 20)
 
 
 GET_FEED_TO_RUN = """-- name: get_feed_to_run \\:one
-SELECT feed_id, rss_url, feed_name, addition_date, interval, last_completed, consecutive_failures, next_run from feeds
+SELECT feeds.feed_id, post_date, unique_id, rss_url
+FROM feeds JOIN feed_history ON feeds.feed_id = feed_history.feed_id
 WHERE now() > next_run
+ORDER BY post_date desc
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED
 """
+
+
+@dataclasses.dataclass()
+class get_feed_to_runRow:
+    feed_id: int
+    post_date: datetime.datetime
+    unique_id: str
+    rss_url: str
 
 
 GET_SUBSCRIBER = """-- name: get_subscriber \\:one
@@ -277,19 +287,15 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_to_run(self) -> Optional[models.Feed]:
+    def get_feed_to_run(self) -> Optional[get_feed_to_runRow]:
         row = self._conn.execute(sqlalchemy.text(GET_FEED_TO_RUN)).first()
         if row is None:
             return None
-        return models.Feed(
+        return get_feed_to_runRow(
             feed_id=row[0],
-            rss_url=row[1],
-            feed_name=row[2],
-            addition_date=row[3],
-            interval=row[4],
-            last_completed=row[5],
-            consecutive_failures=row[6],
-            next_run=row[7],
+            post_date=row[1],
+            unique_id=row[2],
+            rss_url=row[3],
         )
 
     def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:

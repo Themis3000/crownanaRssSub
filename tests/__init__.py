@@ -11,6 +11,7 @@ from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
 from email_service import email_serv, MockEmail
+from worker import do_feed_job
 from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
 
 
@@ -190,21 +191,20 @@ class RssTests(unittest.TestCase):
             def add_sub_invalid():
                 add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
             self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
-    #
-    # def test_worker_feed_job(self):
-    #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-    #     feed, rss_updates = do_feed_job()
-    #     self.assertIsNone(feed)
-    #
-    #     set_mapping("feed1.xml", "feed1_updated.xml")
-    #     with QueryManager() as q:
-    #         q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
-    #
-    #     feed, rss_updates = do_feed_job()
-    #     self.assertIsNotNone(feed)
-    #     self.assertIsNotNone(rss_updates)
+
+    def test_worker_feed_job(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+        did_job = do_feed_job()
+        self.assertFalse(did_job)
+
+        set_mapping("feed1.xml", "feed1_updated.xml")
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+
+        did_job = do_feed_job()
+        self.assertTrue(did_job)
     #
     # def test_worker_mail_job(self):
     #     with QueryManager() as q:

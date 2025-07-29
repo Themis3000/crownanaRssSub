@@ -49,8 +49,10 @@ DELETE FROM subscriptions
 WHERE subscriber_id = $1;
 
 -- name: get_feed_to_run :one
-SELECT * from feeds
+SELECT feeds.feed_id, post_date, unique_id, rss_url
+FROM feeds JOIN feed_history ON feeds.feed_id = feed_history.feed_id
 WHERE now() > next_run
+ORDER BY post_date desc
 LIMIT 1
 FOR NO KEY UPDATE SKIP LOCKED;
 

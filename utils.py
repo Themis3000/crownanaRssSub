@@ -15,19 +15,6 @@ class EmptyRSS(Exception):
     pass
 
 
-# def collect_and_fetch_posts(q: Querier, rss_url: str, feed_id: int) -> RssUpdates:
-#     """Collects new posts and stores them in the database"""
-#     last_post = q.get_current_post(feed_id=feed_id)
-#     if last_post is None:
-#         posts = get_posts(rss_url)
-#     else:
-#         posts = get_posts(rss_url=rss_url, last_id=last_post.unique_id, last_date=last_post.post_date)
-#
-#     store_posts(q=q, updates=posts, feed_id=feed_id)
-#
-#     return posts
-
-
 def store_posts(q: Querier, updates: RssUpdates, feed_id: int):
     for post in updates.rss_posts:
         if q.post_id_exists(feed_id=feed_id, unique_id=post.post_id):
