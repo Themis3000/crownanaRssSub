@@ -8,7 +8,7 @@ from rss import get_posts
 from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
-from email_service import email_serv
+from email_service import email_serv, MockEmail
 from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
 
 
@@ -125,6 +125,9 @@ class RssTests(unittest.TestCase):
                 validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
             add_feed()
             self.assertRaises(IntegrityError, add_feed)
+
+    def test_testing_mode(self):
+        self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
     #
     # def test_add_subscriber(self):
     #     if not isinstance(email_serv, MockEmail):
