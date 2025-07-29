@@ -95,7 +95,11 @@ class RssTests(unittest.TestCase):
             feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
             self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed1.xml")
-            # Need to also validate stored history too.
+            feed_history = list(q.get_feed_history(feed_id=feed_data.feed_id, limit=None))
+            self.assertEqual(3, len(feed_history))
+            self.assertEqual("Blog updates", feed_history[0].title)
+            self.assertEqual("Using photos in Freecad", feed_history[1].title)
+            self.assertEqual("A new start!", feed_history[2].title)
 
     # def test_add_feed_2(self):
     #     with QueryManager() as q:
