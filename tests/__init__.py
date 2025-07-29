@@ -1,4 +1,4 @@
-import time
+import requests
 import unittest
 import sqlalchemy
 from utils import validate_and_add_feed
@@ -7,7 +7,7 @@ from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
 from email_service import email_serv
-from .test_http import start_http, set_mapping, clear_mappings
+from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
 
 
 class RssTests(unittest.TestCase):
@@ -15,8 +15,10 @@ class RssTests(unittest.TestCase):
     def setUpClass(cls):
         cls.http_process = Process(target=start_http)
         cls.http_process.start()
-        # Yeah, I know.
-        time.sleep(1)
+        if not test_endpoint():
+            if not test_endpoint():
+                raise Exception("Http server didn't start")
+
 
     @classmethod
     def tearDownClass(cls):

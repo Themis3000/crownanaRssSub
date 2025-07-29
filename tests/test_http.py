@@ -8,6 +8,10 @@ def start_http():
     app = FastAPI()
     mappings = {}
 
+    @app.get("/")
+    def read_file():
+        return "ok"
+
     @app.get("/{file_name}")
     def read_file(file_name: str):
         if file_name in mappings:
@@ -34,3 +38,13 @@ def clear_mappings():
 
 def set_mapping(name, location):
     requests.post(f"http://127.0.0.1:8010/set_mapping?name={name}&location={location}")
+
+
+def test_endpoint() -> bool:
+    try:
+        res = requests.get("http://127.0.0.1:8010/")
+    except Exception:
+        return False
+    if not res.ok:
+        return False
+    return True
