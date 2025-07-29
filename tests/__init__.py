@@ -1,9 +1,11 @@
+import email_validator
 import requests
 import unittest
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 
-from utils import validate_and_add_feed, add_subscriber
+from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
+    InvalidConfirmationCode, InvalidSubscriber
 from rss import get_posts
 from multiprocessing import Process
 import email.utils
@@ -137,57 +139,57 @@ class RssTests(unittest.TestCase):
             self.assertEqual(sub_email_call['confirm_url'], confirm_url)
             self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
             self.assertEqual(sub_email.to, "test@test.com")
-    #
-    # def test_confirm_subscription(self):
-    #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         self.assertFalse(sub.signup_confirmed)
-    #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-    #         updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
-    #         self.assertTrue(updated_sub.signup_confirmed)
-    #
-    # def test_forbid_double_subscription(self):
-    #     with QueryManager() as q:
-    #         def subscribe():
-    #             add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         subscribe()
-    #         self.assertRaises(IntegrityError, subscribe)
-    #     with QueryManager() as q:
-    #         add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
-    #         add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
-    #         add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
-    #
-    # def test_unsubscribe(self):
-    #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
-    #         remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-    #         unsub_email = email_serv.email_log[1]
-    #         self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
-    #         self.assertEqual(unsub_email.to, "test@test.com")
-    #         self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
-    #
-    # def test_invalid_unsubscribe(self):
-    #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #
-    #     with QueryManager() as q:
-    #         invalid_code = sub.confirmation_code + 0.001
-    #
-    #         def remove_sub_invalid_code():
-    #             remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=invalid_code)
-    #         self.assertRaises(InvalidConfirmationCode, remove_sub_invalid_code)
-    #
-    #         def remove_sub_invalid_id():
-    #             remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
-    #         self.assertRaises(InvalidSubscriber, remove_sub_invalid_id)
-    #
-    # def test_invalid_email(self):
-    #     with QueryManager() as q:
-    #         def add_sub_invalid():
-    #             add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
-    #         self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
+
+    def test_confirm_subscription(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            self.assertFalse(sub.signup_confirmed)
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+            self.assertTrue(updated_sub.signup_confirmed)
+
+    def test_forbid_double_subscription(self):
+        with QueryManager() as q:
+            def subscribe():
+                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            subscribe()
+            self.assertRaises(IntegrityError, subscribe)
+        with QueryManager() as q:
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
+
+    def test_unsubscribe(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
+            remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            unsub_email = email_serv.email_log[1]
+            self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
+            self.assertEqual(unsub_email.to, "test@test.com")
+            self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
+
+    def test_invalid_unsubscribe(self):
+        with QueryManager() as q:
+            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+
+        with QueryManager() as q:
+            invalid_code = sub.confirmation_code + 0.001
+
+            def remove_sub_invalid_code():
+                remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=invalid_code)
+            self.assertRaises(InvalidConfirmationCode, remove_sub_invalid_code)
+
+            def remove_sub_invalid_id():
+                remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
+            self.assertRaises(InvalidSubscriber, remove_sub_invalid_id)
+
+    def test_invalid_email(self):
+        with QueryManager() as q:
+            def add_sub_invalid():
+                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
+            self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
     #
     # def test_worker_feed_job(self):
     #     with QueryManager() as q:
