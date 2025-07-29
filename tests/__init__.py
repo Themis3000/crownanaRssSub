@@ -19,7 +19,6 @@ class RssTests(unittest.TestCase):
             if not test_endpoint():
                 raise Exception("Http server didn't start")
 
-
     @classmethod
     def tearDownClass(cls):
         cls.http_process.terminate()
