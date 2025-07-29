@@ -1,6 +1,8 @@
 import requests
 import unittest
 import sqlalchemy
+from sqlalchemy.exc import IntegrityError
+
 from utils import validate_and_add_feed
 from rss import get_posts
 from multiprocessing import Process
@@ -101,22 +103,28 @@ class RssTests(unittest.TestCase):
             self.assertEqual("Using photos in Freecad", feed_history[1].title)
             self.assertEqual("A new start!", feed_history[2].title)
 
-    # def test_add_feed_2(self):
-    #     with QueryManager() as q:
-    #         validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
-    #         feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
-    #         self.assertEqual(feed_data.feed_name, "LuvstarKei")
-    #         self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed2.xml")
-    #         self.assertEqual(feed_data.last_post_pub, datetime(2025, 7, 13, 4, 8, 7,
-    #                                                            tzinfo=timezone.utc))
-    #         self.assertEqual(feed_data.last_post_id, '92b220bab408cb4d3e4f0b8b788139df4845cfb5')
-    #
-    # def test_unique(self):
-    #     with QueryManager() as q:
-    #         def add_feed():
-    #             validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
-    #         add_feed()
-    #         self.assertRaises(IntegrityError, add_feed)
+    def test_add_feed_2(self):
+        with QueryManager() as q:
+            validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
+            feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
+            self.assertEqual(feed_data.feed_name, "LuvstarKei")
+            self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed2.xml")
+            feed_history = list(q.get_feed_history(feed_id=feed_data.feed_id, limit=None))
+            self.assertEqual(10, len(feed_history))
+            self.assertEqual("7/12/25", feed_history[0].title)
+            self.assertEqual("Hunter Memphis Jr.", feed_history[1].title)
+            self.assertEqual("6/9/25", feed_history[-1].title)
+
+    def test_add_both_feeds(self):
+        self.test_add_feed_1()
+        self.test_add_feed_2()
+
+    def test_unique(self):
+        with QueryManager() as q:
+            def add_feed():
+                validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
+            add_feed()
+            self.assertRaises(IntegrityError, add_feed)
     #
     # def test_add_subscriber(self):
     #     if not isinstance(email_serv, MockEmail):
