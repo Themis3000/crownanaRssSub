@@ -132,7 +132,7 @@ class RssTests(unittest.TestCase):
     def add_subscriber(self):
         self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
         with QueryManager() as q:
-            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             sub_email = email_serv.email_log[0]
             sub_email_call = email_serv.logged_calls[0]
             self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
@@ -143,7 +143,7 @@ class RssTests(unittest.TestCase):
 
     def test_confirm_subscription(self):
         with QueryManager() as q:
-            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             self.assertFalse(sub.signup_confirmed)
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
@@ -163,7 +163,7 @@ class RssTests(unittest.TestCase):
 
     def test_unsubscribe(self):
         with QueryManager() as q:
-            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
             remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             unsub_email = email_serv.email_log[1]
@@ -173,7 +173,7 @@ class RssTests(unittest.TestCase):
 
     def test_invalid_unsubscribe(self):
         with QueryManager() as q:
-            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
 
         with QueryManager() as q:
             invalid_code = sub.confirmation_code + 0.001
@@ -194,7 +194,7 @@ class RssTests(unittest.TestCase):
 
     def test_worker_feed_job(self):
         with QueryManager() as q:
-            sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
         did_job = do_feed_job()
         self.assertFalse(did_job)
@@ -205,10 +205,16 @@ class RssTests(unittest.TestCase):
 
         did_job = do_feed_job()
         self.assertTrue(did_job)
+        
+        with QueryManager() as q:
+            history = list(q.get_feed_history(feed_id=feed.feed_id, limit=20))
+        self.assertEqual("Creative flash photos", history[0].title)
+        self.assertEqual("A new start!", history[-1].title)
+
     #
     # def test_worker_mail_job(self):
     #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+    #         sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
     #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
     #     set_mapping("feed1.xml", "feed1_updated.xml")
     #     with QueryManager() as q:
@@ -231,7 +237,7 @@ class RssTests(unittest.TestCase):
     #
     # def test_find_unfinished_feed(self):
     #     with QueryManager() as q:
-    #         sub = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+    #         sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
     #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
     #     set_mapping("feed1.xml", "feed1_updated.xml")
     #     with QueryManager() as q:

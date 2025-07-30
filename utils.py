@@ -49,7 +49,7 @@ def add_subscriber(q: Querier, rss_url: str, sub_email: str):
     subscriber = q.add_subscriber(feed_id=feed.feed_id, email=sub_email)
     confirm_url = f"{base_url}/sub_confirm?sub_id={subscriber.subscriber_id}&code={subscriber.confirmation_code}"
     email_serv.notify_subscribe(to_addr=sub_email, blog_name=feed.feed_name, confirm_url=confirm_url)
-    return subscriber
+    return subscriber, feed
 
 
 class InvalidConfirmationCode(Exception):

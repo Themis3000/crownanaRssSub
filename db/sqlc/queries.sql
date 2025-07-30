@@ -74,13 +74,13 @@ WHERE feed_id = $1 AND signup_confirmed = true;
 SELECT * FROM feed_history
 WHERE feed_id = $1
 ORDER BY post_date desc
-LIMIT COALESCE(sqlc.narg('limit')::int, 20);
+LIMIT $2;
 
 -- name: get_feed_history_since_date :many
 SELECT * FROM feed_history
 WHERE feed_id = $1 AND collection_date > $2
 ORDER BY post_date desc
-LIMIT COALESCE(sqlc.narg('limit')::int, 20);
+LIMIT $3;
 
 -- name: get_current_post :one
 SELECT * FROM feed_history

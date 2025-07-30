@@ -5,6 +5,7 @@ from cachetools import TTLCache, cached
 from email_service import email_serv
 from typing import Tuple
 import time
+from utils import store_posts
 
 
 post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)))
@@ -49,6 +50,7 @@ def do_feed_job() -> bool:
             q.feed_set_last_check_now(feed_id=feed_job.feed_id)
             return False
 
+        store_posts(q=q, feed_id=feed_job.feed_id, updates=posts)
         q.mark_feed_updates(feed_id=feed_job.feed_id)
         return True
 

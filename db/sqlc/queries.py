@@ -94,7 +94,7 @@ GET_FEED_HISTORY = """-- name: get_feed_history \\:many
 SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id FROM feed_history
 WHERE feed_id = :p1
 ORDER BY post_date desc
-LIMIT COALESCE(:p2\\:\\:int, 20)
+LIMIT :p2
 """
 
 
@@ -102,7 +102,7 @@ GET_FEED_HISTORY_SINCE_DATE = """-- name: get_feed_history_since_date \\:many
 SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id FROM feed_history
 WHERE feed_id = :p1 AND collection_date > :p2
 ORDER BY post_date desc
-LIMIT COALESCE(:p3\\:\\:int, 20)
+LIMIT :p3
 """
 
 
@@ -261,7 +261,7 @@ class Querier:
             next_run=row[7],
         )
 
-    def get_feed_history(self, *, feed_id: int, limit: Optional[int]) -> Iterator[models.FeedHistory]:
+    def get_feed_history(self, *, feed_id: int, limit: int) -> Iterator[models.FeedHistory]:
         result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY), {"p1": feed_id, "p2": limit})
         for row in result:
             yield models.FeedHistory(
@@ -274,7 +274,7 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_history_since_date(self, *, feed_id: int, collection_date: datetime.datetime, limit: Optional[int]) -> Iterator[models.FeedHistory]:
+    def get_feed_history_since_date(self, *, feed_id: int, collection_date: datetime.datetime, limit: int) -> Iterator[models.FeedHistory]:
         result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_DATE), {"p1": feed_id, "p2": collection_date, "p3": limit})
         for row in result:
             yield models.FeedHistory(
