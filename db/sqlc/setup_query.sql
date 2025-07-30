@@ -38,18 +38,21 @@ create index feed_history_post_date_index
 
 create table subscriptions
     (
-        subscriber_id            serial                            not null
+        subscriber_id            serial                                   not null
             constraint subscriptions_pk
                 primary key,
-        feed_id                  integer                           not null
+        feed_id                  integer                                  not null
             references feeds(feed_id),
-        subscription_time        timestamp(0) default NOW()        not null,
-        confirmation_code        float        default random()     not null,
-        email                    varchar(255)                      not null,
-        signup_confirmed         boolean      default false        not null,
+        subscription_time        timestamp(0) default NOW()               not null,
+        confirmation_code        float        default random()            not null,
+        email                    varchar(255)                             not null,
+        signup_confirmed         boolean      default false               not null,
         last_post_notify         integer
             references feed_history(history_id),
-        has_notification_pending boolean      default false        not null,
+        has_notification_pending boolean      default false               not null,
+        last_notification_time   timestamp(0) default NOW()               not null,
+        notification_interval    interval     default interval '12 hours' not null,
+        next_notification        timestamp(0) generated always as ( last_notification_time + notification_interval ) stored not null,
         UNIQUE (feed_id, email)
     );
 

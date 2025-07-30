@@ -39,3 +39,6 @@ class Subscription:
     signup_confirmed: bool
     last_post_notify: Optional[int]
     has_notification_pending: bool
+    last_notification_time: datetime.datetime
+    notification_interval: datetime.timedelta
+    next_notification: datetime.datetime

@@ -29,7 +29,7 @@ class add_feed_historyParams:
 ADD_SUBSCRIBER = """-- name: add_subscriber \\:one
 INSERT INTO subscriptions (feed_id, email)
 VALUES (:p1, :p2)
-returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending
+returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification
 """
 
 
@@ -67,6 +67,13 @@ FEED_UPDATE_NOW = """-- name: feed_update_now \\:exec
 UPDATE feeds
     SET last_completed = NOW() - feeds.interval - interval '00\\:05\\:00'
 WHERE rss_url = :p1
+"""
+
+
+FIND_NOTIFICATION_JOB = """-- name: find_notification_job \\:one
+SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification FROM subscriptions
+WHERE has_notification_pending = true AND NOW() > next_notification
+LIMIT 1
 """
 
 
@@ -125,7 +132,7 @@ class get_feed_to_runRow:
 
 
 GET_SUBSCRIBER = """-- name: get_subscriber \\:one
-SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending from subscriptions
+SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification from subscriptions
 WHERE subscriber_id = :p1 LIMIT 1
 """
 
@@ -158,7 +165,7 @@ WHERE subscriber_id = :p1
 
 
 SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
-SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
+SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
 """
 
 
@@ -188,6 +195,9 @@ class Querier:
             signup_confirmed=row[5],
             last_post_notify=row[6],
             has_notification_pending=row[7],
+            last_notification_time=row[8],
+            notification_interval=row[9],
+            next_notification=row[10],
         )
 
     def confirm_subscription(self, *, subscriber_id: int) -> None:
@@ -216,6 +226,24 @@ class Querier:
 
     def feed_update_now(self, *, rss_url: str) -> None:
         self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
+
+    def find_notification_job(self) -> Optional[models.Subscription]:
+        row = self._conn.execute(sqlalchemy.text(FIND_NOTIFICATION_JOB)).first()
+        if row is None:
+            return None
+        return models.Subscription(
+            subscriber_id=row[0],
+            feed_id=row[1],
+            subscription_time=row[2],
+            confirmation_code=row[3],
+            email=row[4],
+            signup_confirmed=row[5],
+            last_post_notify=row[6],
+            has_notification_pending=row[7],
+            last_notification_time=row[8],
+            notification_interval=row[9],
+            next_notification=row[10],
+        )
 
     def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
         row = self._conn.execute(sqlalchemy.text(GET_CURRENT_POST), {"p1": feed_id}).first()
@@ -311,6 +339,9 @@ class Querier:
             signup_confirmed=row[5],
             last_post_notify=row[6],
             has_notification_pending=row[7],
+            last_notification_time=row[8],
+            notification_interval=row[9],
+            next_notification=row[10],
         )
 
     def list_feeds(self) -> Iterator[models.Feed]:

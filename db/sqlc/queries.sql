@@ -48,6 +48,11 @@ WHERE subscriber_id = $1;
 DELETE FROM subscriptions
 WHERE subscriber_id = $1;
 
+-- name: find_notification_job :one
+SELECT * FROM subscriptions
+WHERE has_notification_pending = true AND NOW() > next_notification
+LIMIT 1;
+
 -- name: get_feed_to_run :one
 SELECT feeds.feed_id, post_date, unique_id, rss_url
 FROM feeds JOIN feed_history ON feeds.feed_id = feed_history.feed_id
