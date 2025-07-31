@@ -22,16 +22,16 @@
     <title></title>
 </head>
 <body>
-    <h1>A new post has been posted to {{ blog_update.blog_name }}!</h1>
+    <h1>A new post has been posted to {{ blog_name }}!</h1>
     <div class="body-text">
-        {% for post in blog_update.rss_posts %}
-            <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.get_readable_date() }}</b><br>
+        {% for post in posts %}
+            <a href="{{ post.link }}"><b>{{ post.title }}</b></a> posted on <b>{{ post.post_date.strftime('%b %d %Y') }}</b><br>
         {% endfor %}
     </div>
     <footer>
-        <p class="unsub">This email was sent to you because you subscribed to {{ blog_update.blog_name }} email updates.
+        <p class="unsub">This email was sent to you because you subscribed to {{ blog_name }} email updates.
             Click <a href="">here</a> if you wish to unsubscribe</p>
-        <p class="advert">Email updates provided for {{ blog_update.blog_name }} by crownana rss email services</p>
+        <p class="advert">Email updates provided for {{ blog_name }} by crownana rss email services</p>
     </footer>
 </body>
 </html>

@@ -47,7 +47,7 @@ create table subscriptions
         confirmation_code        float        default random()            not null,
         email                    varchar(255)                             not null,
         signup_confirmed         boolean      default false               not null,
-        last_post_notify         integer
+        last_post_notify         integer                                  not null
             references feed_history(history_id),
         has_notification_pending boolean      default false               not null,
         last_notification_time   timestamp(0) default NOW()               not null,

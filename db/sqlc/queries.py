@@ -27,8 +27,13 @@ class add_feed_historyParams:
 
 
 ADD_SUBSCRIBER = """-- name: add_subscriber \\:one
-INSERT INTO subscriptions (feed_id, email)
-VALUES (:p1, :p2)
+INSERT INTO subscriptions (feed_id, email, last_post_notify)
+VALUES (:p1, :p2, (
+        SELECT feed_history.history_id FROM feed_history
+        WHERE feed_history.feed_id = :p1
+        ORDER BY post_date desc
+        LIMIT 1
+    ))
 returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification
 """
 
@@ -70,11 +75,22 @@ WHERE rss_url = :p1
 """
 
 
-FIND_NOTIFICATION_JOB = """-- name: find_notification_job \\:one
-SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification FROM subscriptions
+FIND_SUBSCRIBER_TO_NOTIFY = """-- name: find_subscriber_to_notify \\:one
+SELECT subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
+FROM subscriptions JOIN feeds ON subscriptions.feed_id = feeds.feed_id
 WHERE has_notification_pending = true AND NOW() > next_notification
 LIMIT 1
 """
+
+
+@dataclasses.dataclass()
+class find_subscriber_to_notifyRow:
+    subscriber_id: int
+    feed_id: int
+    last_post_notify: int
+    email: str
+    confirmation_code: float
+    feed_name: str
 
 
 GET_CURRENT_POST = """-- name: get_current_post \\:one
@@ -107,7 +123,18 @@ LIMIT :p2
 
 GET_FEED_HISTORY_SINCE_DATE = """-- name: get_feed_history_since_date \\:many
 SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id FROM feed_history
-WHERE feed_id = :p1 AND collection_date > :p2
+WHERE feed_id = :p1 AND post_date > :p2
+ORDER BY post_date desc
+LIMIT :p3
+"""
+
+
+GET_FEED_HISTORY_SINCE_ID = """-- name: get_feed_history_since_id \\:many
+SELECT history_id, feed_id, title, link, post_date, collection_date, unique_id from feed_history
+WHERE feed_history.feed_id = :p1 AND post_date > (
+        SELECT post_date from feed_history
+        WHERE feed_history.history_id = :p2
+    )
 ORDER BY post_date desc
 LIMIT :p3
 """
@@ -150,6 +177,15 @@ WHERE feed_id = :p1 AND signup_confirmed = true
 """
 
 
+MARK_SUBSCRIBER_NOTIFIED = """-- name: mark_subscriber_notified \\:exec
+UPDATE subscriptions
+    SET has_notification_pending = false,
+        last_post_notify = :p2,
+        last_notification_time = NOW()
+WHERE subscriber_id = :p1
+"""
+
+
 POST_ID_EXISTS = """-- name: post_id_exists \\:one
 SELECT EXISTS(
     SELECT FROM feed_history
@@ -160,6 +196,13 @@ SELECT EXISTS(
 
 REMOVE_SUBSCRIPTION = """-- name: remove_subscription \\:exec
 DELETE FROM subscriptions
+WHERE subscriber_id = :p1
+"""
+
+
+SUB_NOTIFY_NOW = """-- name: sub_notify_now \\:exec
+UPDATE subscriptions
+    SET last_notification_time = NOW() - subscriptions.notification_interval - interval '00\\:05\\:00'
 WHERE subscriber_id = :p1
 """
 
@@ -227,22 +270,17 @@ class Querier:
     def feed_update_now(self, *, rss_url: str) -> None:
         self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
 
-    def find_notification_job(self) -> Optional[models.Subscription]:
-        row = self._conn.execute(sqlalchemy.text(FIND_NOTIFICATION_JOB)).first()
+    def find_subscriber_to_notify(self) -> Optional[find_subscriber_to_notifyRow]:
+        row = self._conn.execute(sqlalchemy.text(FIND_SUBSCRIBER_TO_NOTIFY)).first()
         if row is None:
             return None
-        return models.Subscription(
+        return find_subscriber_to_notifyRow(
             subscriber_id=row[0],
             feed_id=row[1],
-            subscription_time=row[2],
-            confirmation_code=row[3],
-            email=row[4],
-            signup_confirmed=row[5],
-            last_post_notify=row[6],
-            has_notification_pending=row[7],
-            last_notification_time=row[8],
-            notification_interval=row[9],
-            next_notification=row[10],
+            last_post_notify=row[2],
+            email=row[3],
+            confirmation_code=row[4],
+            feed_name=row[5],
         )
 
     def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
@@ -302,8 +340,21 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_history_since_date(self, *, feed_id: int, collection_date: datetime.datetime, limit: int) -> Iterator[models.FeedHistory]:
-        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_DATE), {"p1": feed_id, "p2": collection_date, "p3": limit})
+    def get_feed_history_since_date(self, *, feed_id: int, post_date: datetime.datetime, limit: int) -> Iterator[models.FeedHistory]:
+        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_DATE), {"p1": feed_id, "p2": post_date, "p3": limit})
+        for row in result:
+            yield models.FeedHistory(
+                history_id=row[0],
+                feed_id=row[1],
+                title=row[2],
+                link=row[3],
+                post_date=row[4],
+                collection_date=row[5],
+                unique_id=row[6],
+            )
+
+    def get_feed_history_since_id(self, *, feed_id: int, history_id: int, limit: int) -> Iterator[models.FeedHistory]:
+        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_ID), {"p1": feed_id, "p2": history_id, "p3": limit})
         for row in result:
             yield models.FeedHistory(
                 history_id=row[0],
@@ -361,6 +412,9 @@ class Querier:
     def mark_feed_updates(self, *, feed_id: int) -> None:
         self._conn.execute(sqlalchemy.text(MARK_FEED_UPDATES), {"p1": feed_id})
 
+    def mark_subscriber_notified(self, *, subscriber_id: int, last_post_notify: int) -> None:
+        self._conn.execute(sqlalchemy.text(MARK_SUBSCRIBER_NOTIFIED), {"p1": subscriber_id, "p2": last_post_notify})
+
     def post_id_exists(self, *, feed_id: int, unique_id: str) -> Optional[bool]:
         row = self._conn.execute(sqlalchemy.text(POST_ID_EXISTS), {"p1": feed_id, "p2": unique_id}).first()
         if row is None:
@@ -369,6 +423,9 @@ class Querier:
 
     def remove_subscription(self, *, subscriber_id: int) -> None:
         self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})
+
+    def sub_notify_now(self, *, subscriber_id: int) -> None:
+        self._conn.execute(sqlalchemy.text(SUB_NOTIFY_NOW), {"p1": subscriber_id})
 
     def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
         row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()

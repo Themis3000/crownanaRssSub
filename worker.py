@@ -55,22 +55,30 @@ def do_feed_job() -> bool:
         return True
 
 
-def do_mail_job(feed_id: int, posts: RssUpdates) -> bool:
-    """Tries to find subscribers in need of mail under feed id. Returns true if subscribers where found."""
-    # It's very important that this context is exited right after fetching the sub.
-    # Once it's exited it triggers a commit to the db.
-    # If some exception occurs in the block, the transaction will be rolled back.
-    # If an exception occurs, we want to be sure there is no retry out of extreme caution of sending duplicate emails
-    # I'd rather things fail open in this matter
+def do_mail_job() -> bool:
+    """Tries to find users with a notification due and executes the notification.
+    Returns if job was found and completed"""
     with QueryManager() as q:
-        sub = q.fetch_and_update_uncurrent_sub(feed_id=feed_id, last_post_id=posts.rss_posts[0].post_id)
+        sub = q.find_subscriber_to_notify()
+        if sub is None:
+            return False
+        new_posts = list(q.get_feed_history_since_id(feed_id=sub.feed_id, history_id=sub.last_post_notify, limit=20))
 
-    if sub is None:
+    # The length of new_posts should never ever be 0 ever.
+    # But if by some miracle it is, it's important this exception is thrown outside of the QueryManager() block.
+    # Any exception thrown in an exception manager block will cause a rollback, which would cause an infinite loop
+    # as the subscriber would never be marked as notified.
+    if len(new_posts) == 0:
         with QueryManager() as q:
-            q.resolve_feed_notifications(feed_id=feed_id)
-        return False
+            q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=sub.last_post_notify)
+        raise Exception(f"Subscriber {sub.subscriber_id} marked as ready had no new posts actually ready.")
 
-    email_serv.notify_update(to_addr=sub.email, blog_update=posts)
+    # I'm marking notified before sending the email. If it fails it's not that big of a deal.
+    # I'd rather things fail open in this way.
+    with QueryManager() as q:
+        q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=new_posts[-1].history_id)
+
+    email_serv.notify_update(to_addr=sub.email, posts=new_posts, blog_name=sub.feed_name)
     return True
 
 

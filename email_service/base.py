@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from rss import RssUpdates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from email_validator import validate_email, caching_resolver
+from db.sqlc.models import FeedHistory
+from typing import List
 
 env = Environment(
     loader=FileSystemLoader("./email_service/templates"),
@@ -23,10 +24,10 @@ class BaseEmail(ABC):
         email_info = validate_email(to_addr, dns_resolver=resolver)
         self.send_email(to_addr=email_info.normalized, subject=subject, content=content)
 
-    def notify_update(self, to_addr: str, blog_update: RssUpdates):
-        email_content = update_template.render(blog_update=blog_update)
+    def notify_update(self, to_addr: str, posts: List[FeedHistory], blog_name: str):
+        email_content = update_template.render(posts=posts, blog_name=blog_name)
         self.validate_and_send(to_addr=to_addr,
-                               subject=f"New post on {blog_update.blog_name}!",
+                               subject=f"New post on {blog_name}!",
                                content=email_content)
 
     def notify_subscribe(self, to_addr: str, blog_name: str, confirm_url: str):

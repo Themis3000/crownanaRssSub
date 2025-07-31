@@ -3,7 +3,6 @@
 #   sqlc v1.29.0
 import dataclasses
 import datetime
-from typing import Optional
 
 
 @dataclasses.dataclass()
@@ -37,7 +36,7 @@ class Subscription:
     confirmation_code: float
     email: str
     signup_confirmed: bool
-    last_post_notify: Optional[int]
+    last_post_notify: int
     has_notification_pending: bool
     last_notification_time: datetime.datetime
     notification_interval: datetime.timedelta

@@ -28,8 +28,13 @@ UPDATE feeds
 WHERE feed_id = $1;
 
 -- name: add_subscriber :one
-INSERT INTO subscriptions (feed_id, email)
-VALUES ($1, $2)
+INSERT INTO subscriptions (feed_id, email, last_post_notify)
+VALUES ($1, $2, (
+        SELECT feed_history.history_id FROM feed_history
+        WHERE feed_history.feed_id = $1
+        ORDER BY post_date desc
+        LIMIT 1
+    ))
 returning *;
 
 -- name: get_subscriber :one
@@ -48,11 +53,6 @@ WHERE subscriber_id = $1;
 DELETE FROM subscriptions
 WHERE subscriber_id = $1;
 
--- name: find_notification_job :one
-SELECT * FROM subscriptions
-WHERE has_notification_pending = true AND NOW() > next_notification
-LIMIT 1;
-
 -- name: get_feed_to_run :one
 SELECT feeds.feed_id, post_date, unique_id, rss_url
 FROM feeds JOIN feed_history ON feeds.feed_id = feed_history.feed_id
@@ -65,6 +65,11 @@ FOR NO KEY UPDATE SKIP LOCKED;
 UPDATE feeds
     SET last_completed = NOW() - feeds.interval - interval '00:05:00'
 WHERE rss_url = $1;
+
+-- name: sub_notify_now :exec
+UPDATE subscriptions
+    SET last_notification_time = NOW() - subscriptions.notification_interval - interval '00:05:00'
+WHERE subscriber_id = $1;
 
 -- name: add_feed_history :exec
 INSERT INTO feed_history (feed_id, title, link, post_date, unique_id)
@@ -83,9 +88,31 @@ LIMIT $2;
 
 -- name: get_feed_history_since_date :many
 SELECT * FROM feed_history
-WHERE feed_id = $1 AND collection_date > $2
+WHERE feed_id = $1 AND post_date > $2
 ORDER BY post_date desc
 LIMIT $3;
+
+-- name: get_feed_history_since_id :many
+SELECT * from feed_history
+WHERE feed_history.feed_id = $1 AND post_date > (
+        SELECT post_date from feed_history
+        WHERE feed_history.history_id = $2
+    )
+ORDER BY post_date desc
+LIMIT $3;
+
+-- name: find_subscriber_to_notify :one
+SELECT subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
+FROM subscriptions JOIN feeds ON subscriptions.feed_id = feeds.feed_id
+WHERE has_notification_pending = true AND NOW() > next_notification
+LIMIT 1;
+
+-- name: mark_subscriber_notified :exec
+UPDATE subscriptions
+    SET has_notification_pending = false,
+        last_post_notify = $2,
+        last_notification_time = NOW()
+WHERE subscriber_id = $1;
 
 -- name: get_current_post :one
 SELECT * FROM feed_history

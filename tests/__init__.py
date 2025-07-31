@@ -1,3 +1,5 @@
+import datetime
+
 import email_validator
 import requests
 import unittest
@@ -11,7 +13,7 @@ from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
 from email_service import email_serv, MockEmail
-from worker import do_feed_job
+from worker import do_feed_job, do_mail_job
 from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
 
 
@@ -211,29 +213,39 @@ class RssTests(unittest.TestCase):
         self.assertEqual("Creative flash photos", history[0].title)
         self.assertEqual("A new start!", history[-1].title)
 
-    #
-    # def test_worker_mail_job(self):
-    #     with QueryManager() as q:
-    #         sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-    #     set_mapping("feed1.xml", "feed1_updated.xml")
-    #     with QueryManager() as q:
-    #         q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
-    #
-    #     feed, rss_updates = do_feed_job()
-    #     self.assertTrue(feed.unresolved_notification)
-    #     job_completed = do_mail_job(feed_id=feed.feed_id, posts=rss_updates)
-    #     self.assertTrue(job_completed)
-    #
-    #     notification_call = email_serv.logged_calls[-1]
-    #     self.assertEqual("test@test.com", notification_call["to_addr"])
-    #     self.assertEqual(rss_updates, notification_call["blog_update"])
-    #
-    #     job_completed = do_mail_job(feed_id=feed.feed_id, posts=rss_updates)
-    #     self.assertFalse(job_completed)
-    #     with QueryManager() as q:
-    #         feed = q.get_feed(feed_id=feed.feed_id)
-    #     self.assertFalse(feed.unresolved_notification)
+    def test_worker_mail_job(self):
+        with QueryManager() as q:
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+        set_mapping("feed1.xml", "feed1_updated.xml")
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+        do_feed_job()
+        self.assertFalse(sub.has_notification_pending)
+        self.assertGreater(sub.next_notification, datetime.datetime.now())
+
+        job_completed = do_mail_job()
+        self.assertFalse(job_completed)
+
+        with QueryManager() as q:
+            q.sub_notify_now(subscriber_id=sub.subscriber_id)
+        job_completed = do_mail_job()
+        self.assertTrue(job_completed)
+
+        notification_call = email_serv.logged_calls[-1]
+        self.assertEqual("test@test.com", notification_call["to_addr"])
+        self.assertEqual("Creative flash photos", notification_call["posts"][0].title)
+
+        job_completed = do_mail_job()
+        self.assertFalse(job_completed)
+
+        with QueryManager() as q:
+            sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+        self.assertFalse(sub.has_notification_pending)
+        self.assertGreater(sub.next_notification, datetime.datetime.now())
+
+    # Need to add test for multiple updates in single batch.
+
     #
     # def test_find_unfinished_feed(self):
     #     with QueryManager() as q:
