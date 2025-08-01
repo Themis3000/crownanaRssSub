@@ -3,7 +3,6 @@ from db.sqlc.models import Feed
 from rss import get_posts, RssUpdates
 from cachetools import TTLCache, cached
 from email_service import email_serv
-from typing import Tuple
 import time
 from utils import store_posts
 
@@ -15,21 +14,19 @@ caching_get_posts = post_caching(get_posts)
 # Handles doing work and the priority of what work to do. Will run forever.
 def do_work():
     while True:
-        feed, rss_updates = do_feed_job()
-
-        if feed is None:
-            feed, rss_updates = find_unfinished_feed()
-
-        if feed is None:
-            # There is no job to do. Wait 30 seconds before checking again...
-            time.sleep(30)
-            continue
+        did_feed_job = do_feed_job()
 
         # Do up to 200 mail jobs at a time. If there's more it can be completed later.
         for _ in range(200):
-            completed_job = do_mail_job(feed_id=feed.feed_id, posts=rss_updates.rss_posts)
-            if not completed_job:
+            did_mail_job = do_mail_job()
+            if not did_mail_job:
                 break
+
+        # noinspection PyUnboundLocalVariable
+        if not did_feed_job and not did_mail_job:
+            # There is no job to do. Wait 30 seconds before checking again...
+            time.sleep(30)
+            continue
 
 
 def do_feed_job() -> bool:
@@ -80,19 +77,3 @@ def do_mail_job() -> bool:
 
     email_serv.notify_update(to_addr=sub.email, posts=new_posts, blog_name=sub.feed_name)
     return True
-
-
-def find_unfinished_feed() -> Tuple[Feed, RssUpdates] | None:
-    """Tries to find any feed with unresolved notifications and returns it along with updates.
-    Needed for recovering from worker shutdown during task."""
-    with QueryManager() as q:
-        feed = q.get_unresolved_feed()
-
-    if not feed:
-        return
-
-    posts = caching_get_posts(rss_url=feed.rss_url,
-                              last_id=feed.last_notification_post_id,
-                              last_date=feed.last_post_pub)
-
-    return feed, posts

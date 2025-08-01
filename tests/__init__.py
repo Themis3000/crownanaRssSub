@@ -1,11 +1,8 @@
 import datetime
-
 import email_validator
-import requests
 import unittest
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
-
 from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
     InvalidConfirmationCode, InvalidSubscriber
 from rss import get_posts
@@ -246,19 +243,5 @@ class RssTests(unittest.TestCase):
 
     # Need to add test for multiple updates in single batch.
 
-    #
-    # def test_find_unfinished_feed(self):
-    #     with QueryManager() as q:
-    #         sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-    #         confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-    #     set_mapping("feed1.xml", "feed1_updated.xml")
-    #     with QueryManager() as q:
-    #         q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
-    #     do_feed_job()
-    #
-    #     feed, rss_updates = find_unfinished_feed()
-    #     self.assertIsNotNone(feed)
-    #     self.assertEqual("http://127.0.0.1:8010/feed1.xml", feed.rss_url)
-    #     self.assertTrue(feed.unresolved_notification)
-    #     self.assertEqual("Creative flash photos", rss_updates.rss_posts[0].title)
-    #     self.assertEqual(1, len(rss_updates.rss_posts))
+    # Need to remove behavior that only scrapes new rss articles, just get em all in case it's unordered.
+    # It's extra logic for no reason.
