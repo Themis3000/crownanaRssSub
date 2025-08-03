@@ -242,6 +242,38 @@ class RssTests(unittest.TestCase):
         self.assertGreater(sub.next_notification, datetime.datetime.now())
 
     # Need to add test for multiple updates in single batch.
+    def test_worker_multi_mail_job(self):
+        subscribers_feed_1 = ["test@test.com", "test1@test.com", "test2@test.com", "test3@test.com", "test4@test.com"]
+        subscribers_feed_2 = ["test5@test.com", "test2@test.com", "test6@test.com", "test7@test.com", "test1@test.com"]
+        subscribers_feed_3 = ["test5@test.com", "test2@test.com", "test8@test.com", "test9@test.com", "test10@test.com"]
+        feed_plan = [{"rss": "http://127.0.0.1:8010/feed1.xml", "subs": subscribers_feed_1},
+                     {"rss": "http://127.0.0.1:8010/feed2.xml", "subs": subscribers_feed_2},
+                     {"rss": "http://127.0.0.1:8010/feed3.xml", "subs": subscribers_feed_3}]
+
+        with QueryManager() as q:
+            for plan in feed_plan:
+                for sub_email in plan["subs"]:
+                    sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email=sub_email)
+                    confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+                # Add one that won't ever have its subscription confirmed to test if it'll get updates.
+                add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
+
+                q.feed_update_now(rss_url=plan["rss"])
+
+            # Add a feed that won't receive an update
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@test.com")
+
+        # Update the 3 feeds
+        set_mapping("feed1.xml", "feed1_updated.xml")
+        set_mapping("feed2.xml", "feed2_updated.xml")
+        set_mapping("feed3.xml", "feed3_updated.xml")
+        do_feed_job()
+        do_feed_job()
+        do_feed_job()
+        # Make sure the 4th wasn't updated
+        did_job = do_feed_job()
+        self.assertFalse(did_job)
+
 
     # Need to remove behavior that only scrapes new rss articles, just get em all in case it's unordered.
     # It's extra logic for no reason.

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+    <title>Very fake blog</title>
+    <link>https://fakeblog.com</link>
+    <description>The only blog where you don't have a real blog</description>
+
+        <item>
+            <title>fake post 3</title>
+            <link>https://fakeblog.com/blog/posts/fake_post_3.html</link>
+            <description>fake description 3</description>
+            <pubDate>Mon, 30 Jun 2025 23:00:00 -0600</pubDate>
+        </item>
+
+        <item>
+            <title>fake post 2</title>
+            <link>https://fakeblog.com/blog/posts/fake_post_2.html</link>
+            <description>fake description 2</description>
+            <pubDate>Mon, 02 Jun 2025 23:00:00 -0600</pubDate>
+        </item>
+
+        <item>
+            <title>fake post 1</title>
+            <link>https://fakeblog.com/blog/posts/fake_post_1.html</link>
+            <description>fake description 1</description>
+            <pubDate>Tue, 27 May 2025 23:00:00 -0600</pubDate>
+        </item>
+
+</channel>
+</rss>
