@@ -292,46 +292,18 @@ class RssTests(unittest.TestCase):
                 continue
             raise Exception("Unexpected email found")
 
-        # Yes, there's a lot of duplicate code here.
-        # I copy and pasted so that the trace would give a specific line number, which makes it easier to trace.
-        self.assertEqual(4, email_stats["nomail@test.com"]["signup_confirm"])
-        self.assertEqual(0, email_stats["nomail@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test@test.com"]["post_notification"])
-
-        self.assertEqual(2, email_stats["test1@test.com"]["signup_confirm"])
-        self.assertEqual(2, email_stats["test1@test.com"]["post_notification"])
-
-        self.assertEqual(2, email_stats["test1@test.com"]["signup_confirm"])
-        self.assertEqual(2, email_stats["test1@test.com"]["post_notification"])
-
-        self.assertEqual(3, email_stats["test2@test.com"]["signup_confirm"])
-        self.assertEqual(3, email_stats["test2@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test3@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test3@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test4@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test4@test.com"]["post_notification"])
-
-        self.assertEqual(2, email_stats["test5@test.com"]["signup_confirm"])
-        self.assertEqual(2, email_stats["test5@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test6@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test6@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test7@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test7@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test8@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test8@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test9@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test9@test.com"]["post_notification"])
-
-        self.assertEqual(1, email_stats["test10@test.com"]["signup_confirm"])
-        self.assertEqual(1, email_stats["test10@test.com"]["post_notification"])
-
-    # Need to remove behavior that only scrapes new rss articles, just get em all in case it's unordered.
-    # It's extra logic for no reason.
+        email_stats_expectation = {
+            "nomail@test.com": {"signup_confirm": 4, "post_notification": 0},
+            "test@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test1@test.com": {"signup_confirm": 2, "post_notification": 2},
+            "test2@test.com": {"signup_confirm": 3, "post_notification": 3},
+            "test3@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test4@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test5@test.com": {"signup_confirm": 2, "post_notification": 2},
+            "test6@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test7@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test8@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test9@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "test10@test.com": {"signup_confirm": 1, "post_notification": 1},
+        }
+        self.assertEqual(email_stats_expectation, email_stats)
