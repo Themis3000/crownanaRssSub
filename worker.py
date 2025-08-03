@@ -10,8 +10,8 @@ import time
 from utils import store_posts
 
 
-# Handles doing work and the priority of what work to do. Will run forever.
 def do_work():
+    """Runs forever. Handles doing whatever tasks need to be done."""
     while True:
         # Update a single feed if one is ready.
         did_feed_job = do_feed_job()
