@@ -255,25 +255,84 @@ class RssTests(unittest.TestCase):
                 for sub_email in plan["subs"]:
                     sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email=sub_email)
                     confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+                    q.sub_notify_now(subscriber_id=sub.subscriber_id)
                 # Add one that won't ever have its subscription confirmed to test if it'll get updates.
-                add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
+                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
+                q.sub_notify_now(subscriber_id=sub.subscriber_id)
 
                 q.feed_update_now(rss_url=plan["rss"])
 
             # Add a feed that won't receive an update
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@test.com")
+            q.sub_notify_now(subscriber_id=sub.subscriber_id)
+
+        # email_serv.clear_logs()
 
         # Update the 3 feeds
         set_mapping("feed1.xml", "feed1_updated.xml")
         set_mapping("feed2.xml", "feed2_updated.xml")
         set_mapping("feed3.xml", "feed3_updated.xml")
-        do_feed_job()
-        do_feed_job()
-        do_feed_job()
+        self.assertTrue(do_feed_job())
+        self.assertTrue(do_feed_job())
+        self.assertTrue(do_feed_job())
         # Make sure the 4th wasn't updated
-        did_job = do_feed_job()
-        self.assertFalse(did_job)
+        self.assertFalse(do_feed_job())
 
+        did_mail_job = do_mail_jobs()
+        self.assertTrue(did_mail_job)
+
+        all_emails = set(subscribers_feed_1 + subscribers_feed_2 + subscribers_feed_3 + ["nomail@test.com"])
+        email_stats = {test_email: {"signup_confirm": 0, "post_notification": 0} for test_email in all_emails}
+
+        for sent_email in email_serv.email_log:
+            if sent_email.subject.startswith("New post on "):
+                email_stats[sent_email.to]["post_notification"] += 1
+                continue
+            if sent_email.subject.startswith("Confirm your subscription to "):
+                email_stats[sent_email.to]["signup_confirm"] += 1
+                continue
+            raise Exception("Unexpected email found")
+
+        # Yes, there's a lot of duplicate code here.
+        # I copy and pasted so that the trace would give a specific line number, which makes it easier to trace.
+        self.assertEqual(4, email_stats["nomail@test.com"]["signup_confirm"])
+        self.assertEqual(0, email_stats["nomail@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test@test.com"]["post_notification"])
+
+        self.assertEqual(2, email_stats["test1@test.com"]["signup_confirm"])
+        self.assertEqual(2, email_stats["test1@test.com"]["post_notification"])
+
+        self.assertEqual(2, email_stats["test1@test.com"]["signup_confirm"])
+        self.assertEqual(2, email_stats["test1@test.com"]["post_notification"])
+
+        self.assertEqual(3, email_stats["test2@test.com"]["signup_confirm"])
+        self.assertEqual(3, email_stats["test2@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test3@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test3@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test4@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test4@test.com"]["post_notification"])
+
+        self.assertEqual(2, email_stats["test5@test.com"]["signup_confirm"])
+        self.assertEqual(2, email_stats["test5@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test6@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test6@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test7@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test7@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test8@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test8@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test9@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test9@test.com"]["post_notification"])
+
+        self.assertEqual(1, email_stats["test10@test.com"]["signup_confirm"])
+        self.assertEqual(1, email_stats["test10@test.com"]["post_notification"])
 
     # Need to remove behavior that only scrapes new rss articles, just get em all in case it's unordered.
     # It's extra logic for no reason.

@@ -106,7 +106,7 @@ UPDATE subscriptions
     SET is_being_processed = true,
         last_process_update = NOW()
 FROM feeds
-WHERE subscriber_id = (
+WHERE subscriber_id IN (
     SELECT subscriber_id
     FROM subscriptions
     WHERE has_notification_pending = true AND
