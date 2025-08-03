@@ -9,7 +9,7 @@ def start_http():
     mappings = {}
 
     @app.get("/")
-    def read_file():
+    def test():
         return "ok"
 
     @app.get("/{file_name}")

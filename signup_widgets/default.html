@@ -1,0 +1,43 @@
+<form action="/signup" method="post" target="_blank" id="email-signup">
+    <!-- Change the value field to your rss feed url -->
+    <input type="hidden" name="rss_url" value="https://www.crownanabread.com/blog/rss.xml">
+    Sign up for email notifications here:
+    <br>
+    <label>
+        Email:
+        <input type="text" name="email">
+    </label>
+    <br>
+    Notify me up to once every:
+    <br>
+    <label>
+        <!-- Feel free to update the values/labels to reflect whichever update periods you'd like to offer. -->
+        <input type="radio" name="notification_period" value="1d">
+        1 day
+    </label>
+    <label>
+        <input type="radio" name="notification_period" value="3d">
+        3 days
+    </label>
+    <label>
+        <input type="radio" name="notification_period" value="7d">
+        7 days
+    </label>
+    <label>
+        <input type="radio" name="notification_period" value="30d">
+        30 days
+    </label>
+    <br>
+    <input type="submit" value="Sign up">
+</form>
+
+<!-- The JS is optional, if you don't want JS you can remove this section -->
+<!-- With the JS, the submit button will work without leaving the page. -->
+<!-- Without the JS, a new browser tab will be opened when clicked. -->
+<!--<script>-->
+<!--    const form = document.getElementById("email-signup");-->
+<!--    form.addEventListener("submit", (e) => {-->
+<!--        e.preventDefault();-->
+<!--        -->
+<!--    });-->
+<!--</script>-->
