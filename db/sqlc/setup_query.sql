@@ -38,21 +38,25 @@ create index feed_history_post_date_index
 
 create table subscriptions
     (
-        subscriber_id            serial                                   not null
+        subscriber_id            serial                                     not null
             constraint subscriptions_pk
                 primary key,
-        feed_id                  integer                                  not null
+        feed_id                  integer                                    not null
             references feeds(feed_id),
-        subscription_time        timestamp(0) default NOW()               not null,
-        confirmation_code        float        default random()            not null,
-        email                    varchar(255)                             not null,
-        signup_confirmed         boolean      default false               not null,
-        last_post_notify         integer                                  not null
+        subscription_time        timestamp(0) default NOW()                 not null,
+        confirmation_code        float        default random()              not null,
+        email                    varchar(255)                               not null,
+        signup_confirmed         boolean      default false                 not null,
+        last_post_notify         integer                                    not null
             references feed_history(history_id),
-        has_notification_pending boolean      default false               not null,
-        last_notification_time   timestamp(0) default NOW()               not null,
-        notification_interval    interval     default interval '12 hours' not null,
+        has_notification_pending boolean      default false                 not null,
+        last_notification_time   timestamp(0) default NOW()                 not null,
+        notification_interval    interval     default interval '12 hours'   not null,
         next_notification        timestamp(0) generated always as ( last_notification_time + notification_interval ) stored not null,
+--         Stores if the subscriber is currently being processed by a worker
+--         Together with the time field meant to work like a more different lock
+        is_being_processed       boolean      default false                 not null,
+        last_process_update      timestamp(0) default '2000-01-01 00:00:00' not null,
         UNIQUE (feed_id, email)
     );
 

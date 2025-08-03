@@ -34,7 +34,7 @@ VALUES (:p1, :p2, (
         ORDER BY post_date desc
         LIMIT 1
     ))
-returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification
+returning subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification, is_being_processed, last_process_update
 """
 
 
@@ -75,16 +75,29 @@ WHERE rss_url = :p1
 """
 
 
-FIND_SUBSCRIBER_TO_NOTIFY = """-- name: find_subscriber_to_notify \\:one
-SELECT subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
-FROM subscriptions JOIN feeds ON subscriptions.feed_id = feeds.feed_id
-WHERE has_notification_pending = true AND NOW() > next_notification
-LIMIT 1
+FIND_NOTIFY_MARK_UPDATING_SUBS = """-- name: find_notify_mark_updating_subs \\:many
+UPDATE subscriptions
+    SET is_being_processed = true,
+        last_process_update = NOW()
+FROM feeds
+WHERE subscriber_id = (
+    SELECT subscriber_id
+    FROM subscriptions
+    WHERE has_notification_pending = true AND
+          NOW() > next_notification AND
+          signup_confirmed = true AND
+          (not is_being_processed OR last_process_update > NOW() + interval '00\\:05\\:00')
+    ORDER BY subscriptions.feed_id
+    LIMIT :p1
+    FOR NO KEY UPDATE SKIP LOCKED
+    ) AND
+    subscriptions.feed_id = feeds.feed_id
+RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
 """
 
 
 @dataclasses.dataclass()
-class find_subscriber_to_notifyRow:
+class find_notify_mark_updating_subsRow:
     subscriber_id: int
     feed_id: int
     last_post_notify: int
@@ -159,7 +172,7 @@ class get_feed_to_runRow:
 
 
 GET_SUBSCRIBER = """-- name: get_subscriber \\:one
-SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification from subscriptions
+SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification, is_being_processed, last_process_update from subscriptions
 WHERE subscriber_id = :p1 LIMIT 1
 """
 
@@ -181,7 +194,8 @@ MARK_SUBSCRIBER_NOTIFIED = """-- name: mark_subscriber_notified \\:exec
 UPDATE subscriptions
     SET has_notification_pending = false,
         last_post_notify = :p2,
-        last_notification_time = NOW()
+        last_notification_time = NOW(),
+        is_being_processed = false
 WHERE subscriber_id = :p1
 """
 
@@ -208,7 +222,7 @@ WHERE subscriber_id = :p1
 
 
 SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
-SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
+SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification, is_being_processed, last_process_update FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
 """
 
 
@@ -241,6 +255,8 @@ class Querier:
             last_notification_time=row[8],
             notification_interval=row[9],
             next_notification=row[10],
+            is_being_processed=row[11],
+            last_process_update=row[12],
         )
 
     def confirm_subscription(self, *, subscriber_id: int) -> None:
@@ -270,18 +286,17 @@ class Querier:
     def feed_update_now(self, *, rss_url: str) -> None:
         self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
 
-    def find_subscriber_to_notify(self) -> Optional[find_subscriber_to_notifyRow]:
-        row = self._conn.execute(sqlalchemy.text(FIND_SUBSCRIBER_TO_NOTIFY)).first()
-        if row is None:
-            return None
-        return find_subscriber_to_notifyRow(
-            subscriber_id=row[0],
-            feed_id=row[1],
-            last_post_notify=row[2],
-            email=row[3],
-            confirmation_code=row[4],
-            feed_name=row[5],
-        )
+    def find_notify_mark_updating_subs(self, *, limit: int) -> Iterator[find_notify_mark_updating_subsRow]:
+        result = self._conn.execute(sqlalchemy.text(FIND_NOTIFY_MARK_UPDATING_SUBS), {"p1": limit})
+        for row in result:
+            yield find_notify_mark_updating_subsRow(
+                subscriber_id=row[0],
+                feed_id=row[1],
+                last_post_notify=row[2],
+                email=row[3],
+                confirmation_code=row[4],
+                feed_name=row[5],
+            )
 
     def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
         row = self._conn.execute(sqlalchemy.text(GET_CURRENT_POST), {"p1": feed_id}).first()
@@ -393,6 +408,8 @@ class Querier:
             last_notification_time=row[8],
             notification_interval=row[9],
             next_notification=row[10],
+            is_being_processed=row[11],
+            last_process_update=row[12],
         )
 
     def list_feeds(self) -> Iterator[models.Feed]:

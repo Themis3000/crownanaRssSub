@@ -1,28 +1,23 @@
+from typing import List
 from db import QueryManager
-from db.sqlc.models import Feed
-from rss import get_posts, RssUpdates
-from cachetools import TTLCache, cached
+from db.sqlc.models import FeedHistory
+from db.sqlc.queries import find_notify_mark_updating_subsRow
+from rss import get_posts
+from functools import lru_cache
 from email_service import email_serv
 import time
 from utils import store_posts
 
 
-post_caching = cached(cache=(TTLCache(maxsize=10, ttl=600)))
-caching_get_posts = post_caching(get_posts)
-
-
 # Handles doing work and the priority of what work to do. Will run forever.
 def do_work():
     while True:
+        # Update a single feed if one is ready.
         did_feed_job = do_feed_job()
 
         # Do up to 200 mail jobs at a time. If there's more it can be completed later.
-        for _ in range(200):
-            did_mail_job = do_mail_job()
-            if not did_mail_job:
-                break
+        did_mail_job = do_mail_jobs(limit=200)
 
-        # noinspection PyUnboundLocalVariable
         if not did_feed_job and not did_mail_job:
             # There is no job to do. Wait 30 seconds before checking again...
             time.sleep(30)
@@ -52,28 +47,40 @@ def do_feed_job() -> bool:
         return True
 
 
-def do_mail_job() -> bool:
+def do_mail_jobs(limit=100) -> bool:
     """Tries to find users with a notification due and executes the notification.
     Returns if job was found and completed"""
     with QueryManager() as q:
-        sub = q.find_subscriber_to_notify()
-        if sub is None:
+        subs = list(q.find_notify_mark_updating_subs(limit=limit))
+        if len(subs) == 0:
             return False
-        new_posts = list(q.get_feed_history_since_id(feed_id=sub.feed_id, history_id=sub.last_post_notify, limit=20))
 
-    # The length of new_posts should never ever be 0 ever.
-    # But if by some miracle it is, it's important this exception is thrown outside of the QueryManager() block.
-    # Any exception thrown in an exception manager block will cause a rollback, which would cause an infinite loop
-    # as the subscriber would never be marked as notified.
-    if len(new_posts) == 0:
+    @lru_cache(maxsize=128)
+    def caching_get_feed_history_since_id(feed_id: int, history_id: int, history_limit: int) -> List[FeedHistory]:
+        with QueryManager() as q:
+            return list(q.get_feed_history_since_id(feed_id=feed_id, history_id=history_id, limit=history_limit))
+
+    for sub in subs:
+        post_history = caching_get_feed_history_since_id(feed_id=sub.feed_id,
+                                                         history_id=sub.last_post_notify,
+                                                         history_limit=20)
+
+        send_mail_notification(sub=sub, post_history=post_history)
+
+    return True
+
+
+def send_mail_notification(sub: find_notify_mark_updating_subsRow, post_history: List[FeedHistory]):
+    # The length of new_posts should never ever be 0.
+    # But just in case, mark as notified anyway and move on.
+    if len(post_history) == 0:
         with QueryManager() as q:
             q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=sub.last_post_notify)
-        raise Exception(f"Subscriber {sub.subscriber_id} marked as ready had no new posts actually ready.")
+        return
 
     # I'm marking notified before sending the email. If it fails it's not that big of a deal.
     # I'd rather things fail open in this way.
     with QueryManager() as q:
-        q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=new_posts[-1].history_id)
+        q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=post_history[-1].history_id)
 
-    email_serv.notify_update(to_addr=sub.email, posts=new_posts, blog_name=sub.feed_name)
-    return True
+    email_serv.notify_update(to_addr=sub.email, posts=post_history, blog_name=sub.feed_name)

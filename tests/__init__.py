@@ -10,7 +10,7 @@ from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
 from email_service import email_serv, MockEmail
-from worker import do_feed_job, do_mail_job
+from worker import do_feed_job, do_mail_jobs
 from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
 
 
@@ -221,19 +221,19 @@ class RssTests(unittest.TestCase):
         self.assertFalse(sub.has_notification_pending)
         self.assertGreater(sub.next_notification, datetime.datetime.now())
 
-        job_completed = do_mail_job()
+        job_completed = do_mail_jobs()
         self.assertFalse(job_completed)
 
         with QueryManager() as q:
             q.sub_notify_now(subscriber_id=sub.subscriber_id)
-        job_completed = do_mail_job()
+        job_completed = do_mail_jobs()
         self.assertTrue(job_completed)
 
         notification_call = email_serv.logged_calls[-1]
         self.assertEqual("test@test.com", notification_call["to_addr"])
         self.assertEqual("Creative flash photos", notification_call["posts"][0].title)
 
-        job_completed = do_mail_job()
+        job_completed = do_mail_jobs()
         self.assertFalse(job_completed)
 
         with QueryManager() as q:

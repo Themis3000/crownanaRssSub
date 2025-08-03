@@ -101,17 +101,31 @@ WHERE feed_history.feed_id = $1 AND post_date > (
 ORDER BY post_date desc
 LIMIT $3;
 
--- name: find_subscriber_to_notify :one
-SELECT subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
-FROM subscriptions JOIN feeds ON subscriptions.feed_id = feeds.feed_id
-WHERE has_notification_pending = true AND NOW() > next_notification
-LIMIT 1;
+-- name: find_notify_mark_updating_subs :many
+UPDATE subscriptions
+    SET is_being_processed = true,
+        last_process_update = NOW()
+FROM feeds
+WHERE subscriber_id = (
+    SELECT subscriber_id
+    FROM subscriptions
+    WHERE has_notification_pending = true AND
+          NOW() > next_notification AND
+          signup_confirmed = true AND
+          (not is_being_processed OR last_process_update > NOW() + interval '00:05:00')
+    ORDER BY subscriptions.feed_id
+    LIMIT $1
+    FOR NO KEY UPDATE SKIP LOCKED
+    ) AND
+    subscriptions.feed_id = feeds.feed_id
+RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name;
 
 -- name: mark_subscriber_notified :exec
 UPDATE subscriptions
     SET has_notification_pending = false,
         last_post_notify = $2,
-        last_notification_time = NOW()
+        last_notification_time = NOW(),
+        is_being_processed = false
 WHERE subscriber_id = $1;
 
 -- name: get_current_post :one

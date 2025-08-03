@@ -41,3 +41,5 @@ class Subscription:
     last_notification_time: datetime.datetime
     notification_interval: datetime.timedelta
     next_notification: datetime.datetime
+    is_being_processed: bool
+    last_process_update: datetime.datetime
