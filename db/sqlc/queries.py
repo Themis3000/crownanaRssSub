@@ -92,7 +92,7 @@ WHERE subscriber_id = (
     FOR NO KEY UPDATE SKIP LOCKED
     ) AND
     subscriptions.feed_id = feeds.feed_id
-RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name
+RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name, last_process_update
 """
 
 
@@ -104,6 +104,7 @@ class find_notify_mark_updating_subsRow:
     email: str
     confirmation_code: float
     feed_name: str
+    last_process_update: datetime.datetime
 
 
 GET_CURRENT_POST = """-- name: get_current_post \\:one
@@ -296,6 +297,7 @@ class Querier:
                 email=row[3],
                 confirmation_code=row[4],
                 feed_name=row[5],
+                last_process_update=row[6],
             )
 
     def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:

@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 from db import QueryManager
 from db.sqlc.models import FeedHistory
@@ -61,6 +62,10 @@ def do_mail_jobs(limit=100) -> bool:
             return list(q.get_feed_history_since_id(feed_id=feed_id, history_id=history_id, limit=history_limit))
 
     for sub in subs:
+        # If coming up on the 5 minute limit to complete the batch, stop early to ensure no double emails.
+        if sub.last_process_update + datetime.timedelta(minutes=4, seconds=30) < datetime.datetime.now():
+            break
+
         post_history = caching_get_feed_history_since_id(feed_id=sub.feed_id,
                                                          history_id=sub.last_post_notify,
                                                          history_limit=20)

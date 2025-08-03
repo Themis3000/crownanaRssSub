@@ -118,7 +118,7 @@ WHERE subscriber_id = (
     FOR NO KEY UPDATE SKIP LOCKED
     ) AND
     subscriptions.feed_id = feeds.feed_id
-RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name;
+RETURNING subscriber_id, subscriptions.feed_id, last_post_notify, email, confirmation_code, feed_name, last_process_update;
 
 -- name: mark_subscriber_notified :exec
 UPDATE subscriptions
