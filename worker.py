@@ -26,7 +26,7 @@ def do_work():
 
 
 def do_feed_job() -> bool:
-    """Tries to find a feed in need of a refresh. Returns if feed was updated"""
+    """Tries to find a feed in need of a refresh. Returns if feed was refreshed"""
     with QueryManager() as q:
         feed_job = q.get_feed_to_run()
 
@@ -37,11 +37,12 @@ def do_feed_job() -> bool:
             posts = get_posts(rss_url=feed_job.rss_url, last_id=feed_job.unique_id, last_date=feed_job.post_date)
         except Exception:
             q.feed_set_last_fail_now(feed_id=feed_job.feed_id)
-            return False
+            return True
+
+        q.feed_set_last_check_now(feed_id=feed_job.feed_id)
 
         if len(posts.rss_posts) == 0:
-            q.feed_set_last_check_now(feed_id=feed_job.feed_id)
-            return False
+            return True
 
         store_posts(q=q, feed_id=feed_job.feed_id, updates=posts)
         q.mark_feed_updates(feed_id=feed_job.feed_id)
