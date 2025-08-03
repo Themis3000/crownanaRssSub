@@ -259,6 +259,9 @@ class RssTests(unittest.TestCase):
                 # Add one that won't ever have its subscription confirmed to test if it'll get updates.
                 sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
                 q.sub_notify_now(subscriber_id=sub.subscriber_id)
+                # Add one that is confirmed but not ready for notification
+                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nowait@test.com")
+                confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
 
                 q.feed_update_now(rss_url=plan["rss"])
 
@@ -277,10 +280,11 @@ class RssTests(unittest.TestCase):
         self.assertTrue(do_feed_job())
         self.assertFalse(do_feed_job())
 
-        did_mail_job = do_mail_jobs()
-        self.assertTrue(did_mail_job)
+        self.assertTrue(do_mail_jobs())
+        self.assertFalse(do_mail_jobs())
 
-        all_emails = set(subscribers_feed_1 + subscribers_feed_2 + subscribers_feed_3 + ["nomail@test.com"])
+        all_emails = set(subscribers_feed_1 + subscribers_feed_2 + subscribers_feed_3
+                         + ["nomail@test.com", "nowait@test.com"])
         email_stats = {test_email: {"signup_confirm": 0, "post_notification": 0} for test_email in all_emails}
 
         for sent_email in email_serv.email_log:
@@ -305,5 +309,6 @@ class RssTests(unittest.TestCase):
             "test8@test.com": {"signup_confirm": 1, "post_notification": 1},
             "test9@test.com": {"signup_confirm": 1, "post_notification": 1},
             "test10@test.com": {"signup_confirm": 1, "post_notification": 1},
+            "nowait@test.com": {"signup_confirm": 3, "post_notification": 0},
         }
         self.assertEqual(email_stats_expectation, email_stats)
