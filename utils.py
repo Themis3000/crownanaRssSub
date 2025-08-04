@@ -1,8 +1,7 @@
 import os
 from datetime import timedelta
-
 from db import Querier
-from db.sqlc.models import Feed
+from db.sqlc.models import Feed, Subscription
 from email_service import email_serv
 from rss import get_posts, RssUpdates
 from db.sqlc.queries import add_feed_historyParams
@@ -59,13 +58,13 @@ class InvalidSubscriber(Exception):
     pass
 
 
-def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int):
+def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int) -> Subscription:
     subscriber = q.get_subscriber(subscriber_id=subscriber_id)
     if subscriber is None:
         raise InvalidSubscriber()
     if subscriber.confirmation_code != confirmation_code:
         raise InvalidConfirmationCode()
-    q.confirm_subscription(subscriber_id=subscriber_id)
+    return q.confirm_subscription(subscriber_id=subscriber_id)
 
 
 def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int):

@@ -44,10 +44,11 @@ WHERE subscriber_id = $1 LIMIT 1;
 -- name: subscriber_exists :one
 SELECT exists(SELECT * FROM subscriptions WHERE subscriber_id = $1) AS sub_exists;
 
--- name: confirm_subscription :exec
+-- name: confirm_subscription :one
 UPDATE subscriptions
-    set signup_confirmed = TRUE
-WHERE subscriber_id = $1;
+    set signup_confirmed = true
+WHERE subscriber_id = $1
+RETURNING *;
 
 -- name: remove_subscription :exec
 DELETE FROM subscriptions

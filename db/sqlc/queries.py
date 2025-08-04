@@ -38,10 +38,11 @@ returning subscriber_id, feed_id, subscription_time, confirmation_code, email, s
 """
 
 
-CONFIRM_SUBSCRIPTION = """-- name: confirm_subscription \\:exec
+CONFIRM_SUBSCRIPTION = """-- name: confirm_subscription \\:one
 UPDATE subscriptions
-    set signup_confirmed = TRUE
+    set signup_confirmed = true
 WHERE subscriber_id = :p1
+RETURNING subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification, is_being_processed, last_process_update
 """
 
 
@@ -260,8 +261,25 @@ class Querier:
             last_process_update=row[12],
         )
 
-    def confirm_subscription(self, *, subscriber_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id})
+    def confirm_subscription(self, *, subscriber_id: int) -> Optional[models.Subscription]:
+        row = self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id}).first()
+        if row is None:
+            return None
+        return models.Subscription(
+            subscriber_id=row[0],
+            feed_id=row[1],
+            subscription_time=row[2],
+            confirmation_code=row[3],
+            email=row[4],
+            signup_confirmed=row[5],
+            last_post_notify=row[6],
+            has_notification_pending=row[7],
+            last_notification_time=row[8],
+            notification_interval=row[9],
+            next_notification=row[10],
+            is_being_processed=row[11],
+            last_process_update=row[12],
+        )
 
     def create_feed(self, *, rss_url: str, feed_name: str) -> Optional[models.Feed]:
         row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {"p1": rss_url, "p2": feed_name}).first()
