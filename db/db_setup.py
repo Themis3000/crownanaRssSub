@@ -3,10 +3,12 @@ from sqlalchemy.ext.asyncio.engine import AsyncConnection
 
 with open("./db/sqlc/setup_query.sql", "r") as f:
     setup_query = f.read()
+    setup_queries = setup_query.split(";")
 
 
 async def setup_db(conn: AsyncConnection):
-    await conn.execute(sqlalchemy.text(setup_query))
+    for query in setup_queries:
+        await conn.execute(sqlalchemy.text(query))
 
 
 async def update_db(conn: AsyncConnection):

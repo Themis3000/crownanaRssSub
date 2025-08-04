@@ -15,14 +15,18 @@ class QueryManager:
     def __init__(self):
         pass
 
-    def __enter__(self) -> AsyncQuerier:
-        self.conn = engine.connect()
+    def __enter__(self):
+        raise Exception("Entered without async!")
+
+    async def __aenter__(self) -> AsyncQuerier:
+        self.conn = await engine.connect()
+        await self.conn.begin()
         return AsyncQuerier(self.conn)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            self.conn.rollback()
-            self.conn.close()
+            await self.conn.rollback()
+            await self.conn.close()
             return
-        self.conn.commit()
-        self.conn.close()
+        await self.conn.commit()
+        await self.conn.close()

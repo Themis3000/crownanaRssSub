@@ -30,14 +30,12 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
         cls.http_process.join()
 
     async def asyncSetUp(self):
-        conn = engine.connect()
-        await conn.execute(sqlalchemy.text("""
-            DROP SCHEMA public CASCADE;
-            CREATE SCHEMA public;
-            GRANT ALL ON SCHEMA public TO postgres;
-            GRANT ALL ON SCHEMA public TO public;
-            COMMENT ON SCHEMA public IS 'standard public schema';
-        """))
+        conn = await engine.connect()
+        await conn.execute(sqlalchemy.text("DROP SCHEMA public CASCADE;"))
+        await conn.execute(sqlalchemy.text("CREATE SCHEMA public;"))
+        await conn.execute(sqlalchemy.text("GRANT ALL ON SCHEMA public TO postgres;"))
+        await conn.execute(sqlalchemy.text("GRANT ALL ON SCHEMA public TO public;"))
+        await conn.execute(sqlalchemy.text("COMMENT ON SCHEMA public IS 'standard public schema';"))
         await setup_db(conn)
         await conn.commit()
         await conn.close()
@@ -95,7 +93,7 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(posts.rss_posts), 0)
 
     async def test_add_feed_1(self):
-        with QueryManager() as q:
+        async with QueryManager() as q:
             await validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
             feed_data = await q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
             self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
@@ -107,7 +105,7 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual("A new start!", feed_history[2].title)
 
     async def test_add_feed_2(self):
-        with QueryManager() as q:
+        async with QueryManager() as q:
             await validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
             feed_data = await q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
             self.assertEqual(feed_data.feed_name, "LuvstarKei")
@@ -122,16 +120,16 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
         await self.test_add_feed_1()
         await self.test_add_feed_2()
 
-    def test_unique(self):
-        with QueryManager() as q:
+    async def test_unique(self):
+        async with QueryManager() as q:
             def add_feed():
                 validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
             add_feed()
             self.assertRaises(IntegrityError, add_feed)
 
-    def add_subscriber(self):
+    async def add_subscriber(self):
         self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
-        with QueryManager() as q:
+        async with QueryManager() as q:
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             sub_email = email_serv.email_log[0]
             sub_email_call = email_serv.logged_calls[0]
@@ -141,109 +139,110 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
             self.assertEqual(sub_email.to, "test@test.com")
 
-    def test_confirm_subscription(self):
-        with QueryManager() as q:
+    async def test_confirm_subscription(self):
+        async with QueryManager() as q:
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             self.assertFalse(sub.signup_confirmed)
-            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-            updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+            await confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            updated_sub = await q.get_subscriber(subscriber_id=sub.subscriber_id)
             self.assertTrue(updated_sub.signup_confirmed)
 
-    def test_forbid_double_subscription(self):
-        with QueryManager() as q:
-            def subscribe():
-                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            subscribe()
+    async def test_forbid_double_subscription(self):
+        async with QueryManager() as q:
+            async def subscribe():
+                await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            await subscribe()
             self.assertRaises(IntegrityError, subscribe)
-        with QueryManager() as q:
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
+        async with QueryManager() as q:
+            await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
+            await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
+            await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
 
-    def test_unsubscribe(self):
-        with QueryManager() as q:
+    async def test_unsubscribe(self):
+        async with QueryManager() as q:
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
-            remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            await remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             unsub_email = email_serv.email_log[1]
             self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
             self.assertEqual(unsub_email.to, "test@test.com")
             self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
 
-    def test_invalid_unsubscribe(self):
-        with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+    async def test_invalid_unsubscribe(self):
+        async with QueryManager() as q:
+            sub, feed = await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
 
-        with QueryManager() as q:
+        async with QueryManager() as q:
             invalid_code = sub.confirmation_code + 0.001
 
-            def remove_sub_invalid_code():
-                remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=invalid_code)
+            async def remove_sub_invalid_code():
+                await remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=invalid_code)
             self.assertRaises(InvalidConfirmationCode, remove_sub_invalid_code)
 
-            def remove_sub_invalid_id():
-                remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
+            async def remove_sub_invalid_id():
+                await remove_subscription(q=q, subscriber_id=1337, confirmation_code=sub.confirmation_code)
             self.assertRaises(InvalidSubscriber, remove_sub_invalid_id)
 
-    def test_invalid_email(self):
-        with QueryManager() as q:
-            def add_sub_invalid():
-                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@fakedomain9023485.com")
+    async def test_invalid_email(self):
+        async with QueryManager() as q:
+            async def add_sub_invalid():
+                await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml",
+                                     sub_email="test@fakedomain9023485.com")
             self.assertRaises(email_validator.exceptions_types.EmailUndeliverableError, add_sub_invalid)
 
-    def test_worker_feed_job(self):
-        with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+    async def test_worker_feed_job(self):
+        async with QueryManager() as q:
+            sub, feed = await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            await confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
         did_job = do_feed_job()
         self.assertFalse(did_job)
 
         set_mapping("feed1.xml", "feed1_updated.xml")
-        with QueryManager() as q:
-            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+        async with QueryManager() as q:
+            await q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
 
         did_job = do_feed_job()
         self.assertTrue(did_job)
         
-        with QueryManager() as q:
-            history = list(q.get_feed_history(feed_id=feed.feed_id, limit=20))
+        async with QueryManager() as q:
+            history = await sync_list(q.get_feed_history(feed_id=feed.feed_id, limit=20))
         self.assertEqual("Creative flash photos", history[0].title)
         self.assertEqual("A new start!", history[-1].title)
 
-    def test_worker_mail_job(self):
-        with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+    async def test_worker_mail_job(self):
+        async with QueryManager() as q:
+            sub, feed = await add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            await confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
         set_mapping("feed1.xml", "feed1_updated.xml")
-        with QueryManager() as q:
-            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
-        do_feed_job()
+        async with QueryManager() as q:
+            await q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+        await do_feed_job()
         self.assertFalse(sub.has_notification_pending)
         self.assertGreater(sub.next_notification, datetime.datetime.now())
 
-        job_completed = do_mail_jobs()
+        job_completed = await do_mail_jobs()
         self.assertFalse(job_completed)
 
-        with QueryManager() as q:
-            q.sub_notify_now(subscriber_id=sub.subscriber_id)
-        job_completed = do_mail_jobs()
+        async with QueryManager() as q:
+            await q.sub_notify_now(subscriber_id=sub.subscriber_id)
+        job_completed = await do_mail_jobs()
         self.assertTrue(job_completed)
 
         notification_call = email_serv.logged_calls[-1]
         self.assertEqual("test@test.com", notification_call["to_addr"])
         self.assertEqual("Creative flash photos", notification_call["posts"][0].title)
 
-        job_completed = do_mail_jobs()
+        job_completed = await do_mail_jobs()
         self.assertFalse(job_completed)
 
-        with QueryManager() as q:
-            sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+        async with QueryManager() as q:
+            sub = await q.get_subscriber(subscriber_id=sub.subscriber_id)
         self.assertFalse(sub.has_notification_pending)
         self.assertGreater(sub.next_notification, datetime.datetime.now())
 
     # Need to add test for multiple updates in single batch.
-    def test_worker_multi_mail_job(self):
+    async def test_worker_multi_mail_job(self):
         subscribers_feed_1 = ["test@test.com", "test1@test.com", "test2@test.com", "test3@test.com", "test4@test.com"]
         subscribers_feed_2 = ["test5@test.com", "test2@test.com", "test6@test.com", "test7@test.com", "test1@test.com"]
         subscribers_feed_3 = ["test5@test.com", "test2@test.com", "test8@test.com", "test9@test.com", "test10@test.com"]
@@ -251,25 +250,25 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
                      {"rss": "http://127.0.0.1:8010/feed2.xml", "subs": subscribers_feed_2},
                      {"rss": "http://127.0.0.1:8010/feed3.xml", "subs": subscribers_feed_3}]
 
-        with QueryManager() as q:
+        async with QueryManager() as q:
             for plan in feed_plan:
                 for sub_email in plan["subs"]:
-                    sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email=sub_email)
-                    confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-                    q.sub_notify_now(subscriber_id=sub.subscriber_id)
+                    sub, feed = await add_subscriber(q=q, rss_url=plan["rss"], sub_email=sub_email)
+                    await confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+                    await q.sub_notify_now(subscriber_id=sub.subscriber_id)
                 # Add one that won't ever have its subscription confirmed to test if it'll get updates.
                 sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
-                q.sub_notify_now(subscriber_id=sub.subscriber_id)
+                await q.sub_notify_now(subscriber_id=sub.subscriber_id)
                 # Add one that is confirmed but not ready for notification
                 sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nowait@test.com")
-                confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+                await confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
 
-                q.feed_update_now(rss_url=plan["rss"])
+                await q.feed_update_now(rss_url=plan["rss"])
 
             # Add a feed that won't receive an update
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@test.com")
-            q.sub_notify_now(subscriber_id=sub.subscriber_id)
-            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed4.xml")
+            await q.sub_notify_now(subscriber_id=sub.subscriber_id)
+            await q.feed_update_now(rss_url="http://127.0.0.1:8010/feed4.xml")
 
         # Update the feeds
         set_mapping("feed1.xml", "feed1_updated.xml")
