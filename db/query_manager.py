@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from .sqlc.queries import AsyncQuerier
 
 
@@ -8,7 +8,7 @@ _DB_PASS = os.environ['password']
 _DB_HOST = os.environ['host']
 _DB_PORT = os.environ['port']
 _DB_DATABASE = os.environ['database']
-engine = create_engine(url=f"postgresql+psycopg2://{_DB_USER}:{_DB_PASS}@{_DB_HOST}:{_DB_PORT}/{_DB_DATABASE}")
+engine = create_async_engine(url=f"postgresql+asyncpg://{_DB_USER}:{_DB_PASS}@{_DB_HOST}:{_DB_PORT}/{_DB_DATABASE}")
 
 
 class QueryManager:

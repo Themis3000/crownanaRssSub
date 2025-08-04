@@ -29,18 +29,18 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
         cls.http_process.terminate()
         cls.http_process.join()
 
-    def setUp(self):
+    async def asyncSetUp(self):
         conn = engine.connect()
-        conn.execute(sqlalchemy.text("""
+        await conn.execute(sqlalchemy.text("""
             DROP SCHEMA public CASCADE;
             CREATE SCHEMA public;
             GRANT ALL ON SCHEMA public TO postgres;
             GRANT ALL ON SCHEMA public TO public;
             COMMENT ON SCHEMA public IS 'standard public schema';
         """))
-        setup_db(conn)
-        conn.commit()
-        conn.close()
+        await setup_db(conn)
+        await conn.commit()
+        await conn.close()
         email_serv.clear_logs()
         clear_mappings()
 
