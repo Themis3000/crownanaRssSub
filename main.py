@@ -1,10 +1,10 @@
 from datetime import timedelta
 from email_validator import EmailUndeliverableError
-from fastapi import FastAPI, Response, Request, Form
+from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from db import update_db, engine
-from utils import add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode
+from utils import add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode, remove_subscription
 from db import QueryManager
 from typing import Annotated
 
@@ -65,6 +65,27 @@ def confirm_sub(sub_id: int, code: float, request: Request):
     return templates.TemplateResponse(request=request,
                                       name="confirm_success.jinja2",
                                       context={"email": sub.email, "period": sub.notification_interval.days})
+
+
+@app.get("/unsubscribe")
+def unsub(sub_id: int, code: float, request: Request):
+    with QueryManager() as q:
+        try:
+            # See if I can get sqlc to consider this param as a float in the generated code.
+            # noinspection PyTypeChecker
+            sub, feed = remove_subscription(q=q, subscriber_id=sub_id, confirmation_code=code)
+        except InvalidSubscriber:
+            return templates.TemplateResponse(request=request,
+                                              name="unsub_failure.jinja2",
+                                              context={"error_explanation": "Invalid subscriber id provided."})
+        except InvalidConfirmationCode:
+            return templates.TemplateResponse(request=request,
+                                              name="unsub_failure.jinja2",
+                                              context={"error_explanation": "Invalid confirmation code provided."})
+
+    return templates.TemplateResponse(request=request,
+                                      name="unsub_success.jinja2",
+                                      context={"email": sub.email, "feed_name": feed.feed_name})
 
 
 if __name__ == "__main__":

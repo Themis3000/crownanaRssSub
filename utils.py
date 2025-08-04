@@ -1,5 +1,7 @@
 import os
 from datetime import timedelta
+from typing import Tuple
+
 from db import Querier
 from db.sqlc.models import Feed, Subscription
 from email_service import email_serv
@@ -67,7 +69,7 @@ def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int)
     return q.confirm_subscription(subscriber_id=subscriber_id)
 
 
-def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int):
+def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int) -> Tuple[Subscription, Feed]:
     subscriber = q.get_subscriber(subscriber_id=subscriber_id)
     if subscriber is None:
         raise InvalidSubscriber()
@@ -76,3 +78,4 @@ def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int):
     blog = q.get_feed(feed_id=subscriber.feed_id)
     q.remove_subscription(subscriber_id=subscriber_id)
     email_serv.notify_unsubscribe(to_addr=subscriber.email, blog_name=blog.feed_name)
+    return subscriber, blog
