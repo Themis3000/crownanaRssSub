@@ -28,8 +28,8 @@ UPDATE feeds
 WHERE feed_id = $1;
 
 -- name: add_subscriber :one
-INSERT INTO subscriptions (feed_id, email, last_post_notify)
-VALUES ($1, $2, (
+INSERT INTO subscriptions (feed_id, email, notification_interval, last_post_notify)
+VALUES ($1, $2, $3, (
         SELECT feed_history.history_id FROM feed_history
         WHERE feed_history.feed_id = $1
         ORDER BY post_date desc

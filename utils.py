@@ -1,4 +1,6 @@
 import os
+from datetime import timedelta
+
 from db import Querier
 from db.sqlc.models import Feed
 from email_service import email_serv
@@ -42,11 +44,11 @@ def validate_and_add_feed(q: Querier, rss_url: str) -> Feed:
     return feed
 
 
-def add_subscriber(q: Querier, rss_url: str, sub_email: str):
+def add_subscriber(q: Querier, rss_url: str, sub_email: str, notification_delta=timedelta(days=1)):
     feed = q.get_feed_by_rss(rss_url=rss_url)
     if feed is None:
         feed = validate_and_add_feed(q=q, rss_url=rss_url)
-    subscriber = q.add_subscriber(feed_id=feed.feed_id, email=sub_email)
+    subscriber = q.add_subscriber(feed_id=feed.feed_id, email=sub_email, notification_interval=notification_delta)
     confirm_url = f"{base_url}/sub_confirm?sub_id={subscriber.subscriber_id}&code={subscriber.confirmation_code}"
     email_serv.notify_subscribe(to_addr=sub_email, blog_name=feed.feed_name, confirm_url=confirm_url)
     return subscriber, feed

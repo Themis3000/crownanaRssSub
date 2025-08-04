@@ -27,8 +27,8 @@ class add_feed_historyParams:
 
 
 ADD_SUBSCRIBER = """-- name: add_subscriber \\:one
-INSERT INTO subscriptions (feed_id, email, last_post_notify)
-VALUES (:p1, :p2, (
+INSERT INTO subscriptions (feed_id, email, notification_interval, last_post_notify)
+VALUES (:p1, :p2, :p3, (
         SELECT feed_history.history_id FROM feed_history
         WHERE feed_history.feed_id = :p1
         ORDER BY post_date desc
@@ -240,8 +240,8 @@ class Querier:
             "p5": arg.unique_id,
         })
 
-    def add_subscriber(self, *, feed_id: int, email: str) -> Optional[models.Subscription]:
-        row = self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email}).first()
+    def add_subscriber(self, *, feed_id: int, email: str, notification_interval: datetime.timedelta) -> Optional[models.Subscription]:
+        row = self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email, "p3": notification_interval}).first()
         if row is None:
             return None
         return models.Subscription(
