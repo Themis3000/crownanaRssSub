@@ -7,10 +7,7 @@ from email_service import email_serv
 from rss import get_posts, RssUpdates
 from db.sqlc.queries import add_feed_historyParams
 
-if os.environ.get("testing") == "true":
-    base_url = "http://127.0.0.1:8080"
-else:
-    base_url = os.environ["base_url"]
+base_url = os.environ["base_url"]
 
 
 class EmptyRSS(Exception):
