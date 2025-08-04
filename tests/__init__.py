@@ -30,6 +30,7 @@ class RssTests(unittest.IsolatedAsyncioTestCase):
         cls.http_process.join()
 
     async def asyncSetUp(self):
+        # TODO for some reason, it seems like the setup is only working every other test...
         conn = await engine.connect()
         await conn.execute(sqlalchemy.text("DROP SCHEMA public CASCADE;"))
         await conn.execute(sqlalchemy.text("CREATE SCHEMA public;"))
