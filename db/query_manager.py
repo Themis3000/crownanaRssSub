@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import create_engine
-from .sqlc.queries import Querier
+from .sqlc.queries import AsyncQuerier
 
 
 _DB_USER = os.environ['user']
@@ -15,9 +15,9 @@ class QueryManager:
     def __init__(self):
         pass
 
-    def __enter__(self) -> Querier:
+    def __enter__(self) -> AsyncQuerier:
         self.conn = engine.connect()
-        return Querier(self.conn)
+        return AsyncQuerier(self.conn)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:

@@ -12,9 +12,10 @@ from db import QueryManager, engine, setup_db
 from email_service import email_serv, MockEmail
 from worker import do_feed_job, do_mail_jobs
 from .test_http import start_http, set_mapping, clear_mappings, test_endpoint
+from async_tools import sync_list
 
 
-class RssTests(unittest.TestCase):
+class RssTests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         cls.http_process = Process(target=start_http)
@@ -93,33 +94,33 @@ class RssTests(unittest.TestCase):
         posts = get_posts("http://127.0.0.1:8010/feed2.xml", post_id, post_date)
         self.assertEqual(len(posts.rss_posts), 0)
 
-    def test_add_feed_1(self):
+    async def test_add_feed_1(self):
         with QueryManager() as q:
-            validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
-            feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
+            await validate_and_add_feed(q, "http://127.0.0.1:8010/feed1.xml")
+            feed_data = await q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed1.xml")
             self.assertEqual(feed_data.feed_name, "Crownanabread Blog")
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed1.xml")
-            feed_history = list(q.get_feed_history(feed_id=feed_data.feed_id, limit=20))
+            feed_history = await sync_list(q.get_feed_history(feed_id=feed_data.feed_id, limit=20))
             self.assertEqual(3, len(feed_history))
             self.assertEqual("Blog updates", feed_history[0].title)
             self.assertEqual("Using photos in Freecad", feed_history[1].title)
             self.assertEqual("A new start!", feed_history[2].title)
 
-    def test_add_feed_2(self):
+    async def test_add_feed_2(self):
         with QueryManager() as q:
-            validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
-            feed_data = q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
+            await validate_and_add_feed(q, "http://127.0.0.1:8010/feed2.xml")
+            feed_data = await q.get_feed_by_rss(rss_url="http://127.0.0.1:8010/feed2.xml")
             self.assertEqual(feed_data.feed_name, "LuvstarKei")
             self.assertEqual(feed_data.rss_url, "http://127.0.0.1:8010/feed2.xml")
-            feed_history = list(q.get_feed_history(feed_id=feed_data.feed_id, limit=20))
+            feed_history = await sync_list(q.get_feed_history(feed_id=feed_data.feed_id, limit=20))
             self.assertEqual(10, len(feed_history))
             self.assertEqual("7/12/25", feed_history[0].title)
             self.assertEqual("Hunter Memphis Jr.", feed_history[1].title)
             self.assertEqual("6/9/25", feed_history[-1].title)
 
-    def test_add_both_feeds(self):
-        self.test_add_feed_1()
-        self.test_add_feed_2()
+    async def test_add_both_feeds(self):
+        await self.test_add_feed_1()
+        await self.test_add_feed_2()
 
     def test_unique(self):
         with QueryManager() as q:

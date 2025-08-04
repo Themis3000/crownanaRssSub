@@ -4,9 +4,10 @@
 # source: queries.sql
 import dataclasses
 import datetime
-from typing import Iterator, Optional
+from typing import AsyncIterator, Optional
 
 import sqlalchemy
+import sqlalchemy.ext.asyncio
 
 from . import models
 
@@ -227,12 +228,12 @@ SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_cod
 """
 
 
-class Querier:
-    def __init__(self, conn: sqlalchemy.engine.Connection):
+class AsyncQuerier:
+    def __init__(self, conn: sqlalchemy.ext.asyncio.AsyncConnection):
         self._conn = conn
 
-    def add_feed_history(self, arg: add_feed_historyParams) -> None:
-        self._conn.execute(sqlalchemy.text(ADD_FEED_HISTORY), {
+    async def add_feed_history(self, arg: add_feed_historyParams) -> None:
+        await self._conn.execute(sqlalchemy.text(ADD_FEED_HISTORY), {
             "p1": arg.feed_id,
             "p2": arg.title,
             "p3": arg.link,
@@ -240,8 +241,8 @@ class Querier:
             "p5": arg.unique_id,
         })
 
-    def add_subscriber(self, *, feed_id: int, email: str, notification_interval: datetime.timedelta) -> Optional[models.Subscription]:
-        row = self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email, "p3": notification_interval}).first()
+    async def add_subscriber(self, *, feed_id: int, email: str, notification_interval: datetime.timedelta) -> Optional[models.Subscription]:
+        row = (await self._conn.execute(sqlalchemy.text(ADD_SUBSCRIBER), {"p1": feed_id, "p2": email, "p3": notification_interval})).first()
         if row is None:
             return None
         return models.Subscription(
@@ -260,11 +261,11 @@ class Querier:
             last_process_update=row[12],
         )
 
-    def confirm_subscription(self, *, subscriber_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id})
+    async def confirm_subscription(self, *, subscriber_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(CONFIRM_SUBSCRIPTION), {"p1": subscriber_id})
 
-    def create_feed(self, *, rss_url: str, feed_name: str) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(CREATE_FEED), {"p1": rss_url, "p2": feed_name}).first()
+    async def create_feed(self, *, rss_url: str, feed_name: str) -> Optional[models.Feed]:
+        row = (await self._conn.execute(sqlalchemy.text(CREATE_FEED), {"p1": rss_url, "p2": feed_name})).first()
         if row is None:
             return None
         return models.Feed(
@@ -278,18 +279,18 @@ class Querier:
             next_run=row[7],
         )
 
-    def feed_set_last_check_now(self, *, feed_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(FEED_SET_LAST_CHECK_NOW), {"p1": feed_id})
+    async def feed_set_last_check_now(self, *, feed_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(FEED_SET_LAST_CHECK_NOW), {"p1": feed_id})
 
-    def feed_set_last_fail_now(self, *, feed_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(FEED_SET_LAST_FAIL_NOW), {"p1": feed_id})
+    async def feed_set_last_fail_now(self, *, feed_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(FEED_SET_LAST_FAIL_NOW), {"p1": feed_id})
 
-    def feed_update_now(self, *, rss_url: str) -> None:
-        self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
+    async def feed_update_now(self, *, rss_url: str) -> None:
+        await self._conn.execute(sqlalchemy.text(FEED_UPDATE_NOW), {"p1": rss_url})
 
-    def find_notify_mark_updating_subs(self, *, limit: int) -> Iterator[find_notify_mark_updating_subsRow]:
-        result = self._conn.execute(sqlalchemy.text(FIND_NOTIFY_MARK_UPDATING_SUBS), {"p1": limit})
-        for row in result:
+    async def find_notify_mark_updating_subs(self, *, limit: int) -> AsyncIterator[find_notify_mark_updating_subsRow]:
+        result = await self._conn.stream(sqlalchemy.text(FIND_NOTIFY_MARK_UPDATING_SUBS), {"p1": limit})
+        async for row in result:
             yield find_notify_mark_updating_subsRow(
                 subscriber_id=row[0],
                 feed_id=row[1],
@@ -300,8 +301,8 @@ class Querier:
                 last_process_update=row[6],
             )
 
-    def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
-        row = self._conn.execute(sqlalchemy.text(GET_CURRENT_POST), {"p1": feed_id}).first()
+    async def get_current_post(self, *, feed_id: int) -> Optional[models.FeedHistory]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_CURRENT_POST), {"p1": feed_id})).first()
         if row is None:
             return None
         return models.FeedHistory(
@@ -314,8 +315,8 @@ class Querier:
             unique_id=row[6],
         )
 
-    def get_feed(self, *, feed_id: int) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(GET_FEED), {"p1": feed_id}).first()
+    async def get_feed(self, *, feed_id: int) -> Optional[models.Feed]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_FEED), {"p1": feed_id})).first()
         if row is None:
             return None
         return models.Feed(
@@ -329,8 +330,8 @@ class Querier:
             next_run=row[7],
         )
 
-    def get_feed_by_rss(self, *, rss_url: str) -> Optional[models.Feed]:
-        row = self._conn.execute(sqlalchemy.text(GET_FEED_BY_RSS), {"p1": rss_url}).first()
+    async def get_feed_by_rss(self, *, rss_url: str) -> Optional[models.Feed]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_FEED_BY_RSS), {"p1": rss_url})).first()
         if row is None:
             return None
         return models.Feed(
@@ -344,9 +345,9 @@ class Querier:
             next_run=row[7],
         )
 
-    def get_feed_history(self, *, feed_id: int, limit: int) -> Iterator[models.FeedHistory]:
-        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY), {"p1": feed_id, "p2": limit})
-        for row in result:
+    async def get_feed_history(self, *, feed_id: int, limit: int) -> AsyncIterator[models.FeedHistory]:
+        result = await self._conn.stream(sqlalchemy.text(GET_FEED_HISTORY), {"p1": feed_id, "p2": limit})
+        async for row in result:
             yield models.FeedHistory(
                 history_id=row[0],
                 feed_id=row[1],
@@ -357,9 +358,9 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_history_since_date(self, *, feed_id: int, post_date: datetime.datetime, limit: int) -> Iterator[models.FeedHistory]:
-        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_DATE), {"p1": feed_id, "p2": post_date, "p3": limit})
-        for row in result:
+    async def get_feed_history_since_date(self, *, feed_id: int, post_date: datetime.datetime, limit: int) -> AsyncIterator[models.FeedHistory]:
+        result = await self._conn.stream(sqlalchemy.text(GET_FEED_HISTORY_SINCE_DATE), {"p1": feed_id, "p2": post_date, "p3": limit})
+        async for row in result:
             yield models.FeedHistory(
                 history_id=row[0],
                 feed_id=row[1],
@@ -370,9 +371,9 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_history_since_id(self, *, feed_id: int, history_id: int, limit: int) -> Iterator[models.FeedHistory]:
-        result = self._conn.execute(sqlalchemy.text(GET_FEED_HISTORY_SINCE_ID), {"p1": feed_id, "p2": history_id, "p3": limit})
-        for row in result:
+    async def get_feed_history_since_id(self, *, feed_id: int, history_id: int, limit: int) -> AsyncIterator[models.FeedHistory]:
+        result = await self._conn.stream(sqlalchemy.text(GET_FEED_HISTORY_SINCE_ID), {"p1": feed_id, "p2": history_id, "p3": limit})
+        async for row in result:
             yield models.FeedHistory(
                 history_id=row[0],
                 feed_id=row[1],
@@ -383,8 +384,8 @@ class Querier:
                 unique_id=row[6],
             )
 
-    def get_feed_to_run(self) -> Optional[get_feed_to_runRow]:
-        row = self._conn.execute(sqlalchemy.text(GET_FEED_TO_RUN)).first()
+    async def get_feed_to_run(self) -> Optional[get_feed_to_runRow]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_FEED_TO_RUN))).first()
         if row is None:
             return None
         return get_feed_to_runRow(
@@ -394,8 +395,8 @@ class Querier:
             rss_url=row[3],
         )
 
-    def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
-        row = self._conn.execute(sqlalchemy.text(GET_SUBSCRIBER), {"p1": subscriber_id}).first()
+    async def get_subscriber(self, *, subscriber_id: int) -> Optional[models.Subscription]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_SUBSCRIBER), {"p1": subscriber_id})).first()
         if row is None:
             return None
         return models.Subscription(
@@ -414,9 +415,9 @@ class Querier:
             last_process_update=row[12],
         )
 
-    def list_feeds(self) -> Iterator[models.Feed]:
-        result = self._conn.execute(sqlalchemy.text(LIST_FEEDS))
-        for row in result:
+    async def list_feeds(self) -> AsyncIterator[models.Feed]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_FEEDS))
+        async for row in result:
             yield models.Feed(
                 feed_id=row[0],
                 rss_url=row[1],
@@ -428,26 +429,26 @@ class Querier:
                 next_run=row[7],
             )
 
-    def mark_feed_updates(self, *, feed_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(MARK_FEED_UPDATES), {"p1": feed_id})
+    async def mark_feed_updates(self, *, feed_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(MARK_FEED_UPDATES), {"p1": feed_id})
 
-    def mark_subscriber_notified(self, *, subscriber_id: int, last_post_notify: int) -> None:
-        self._conn.execute(sqlalchemy.text(MARK_SUBSCRIBER_NOTIFIED), {"p1": subscriber_id, "p2": last_post_notify})
+    async def mark_subscriber_notified(self, *, subscriber_id: int, last_post_notify: int) -> None:
+        await self._conn.execute(sqlalchemy.text(MARK_SUBSCRIBER_NOTIFIED), {"p1": subscriber_id, "p2": last_post_notify})
 
-    def post_id_exists(self, *, feed_id: int, unique_id: str) -> Optional[bool]:
-        row = self._conn.execute(sqlalchemy.text(POST_ID_EXISTS), {"p1": feed_id, "p2": unique_id}).first()
+    async def post_id_exists(self, *, feed_id: int, unique_id: str) -> Optional[bool]:
+        row = (await self._conn.execute(sqlalchemy.text(POST_ID_EXISTS), {"p1": feed_id, "p2": unique_id})).first()
         if row is None:
             return None
         return row[0]
 
-    def remove_subscription(self, *, subscriber_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})
+    async def remove_subscription(self, *, subscriber_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(REMOVE_SUBSCRIPTION), {"p1": subscriber_id})
 
-    def sub_notify_now(self, *, subscriber_id: int) -> None:
-        self._conn.execute(sqlalchemy.text(SUB_NOTIFY_NOW), {"p1": subscriber_id})
+    async def sub_notify_now(self, *, subscriber_id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(SUB_NOTIFY_NOW), {"p1": subscriber_id})
 
-    def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
-        row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()
+    async def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
+        row = (await self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id})).first()
         if row is None:
             return None
         return row[0]
