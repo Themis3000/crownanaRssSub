@@ -8,7 +8,7 @@ create table feeds
                 unique,
         feed_name                 varchar(2000)                            not null,
         addition_date             timestamp(0) default NOW()               not null,
-        interval                  interval     default interval '12 hours' not null,
+        interval                  interval     default interval '2 hours'  not null,
         last_completed            timestamp(0) default NOW()               not null,
         consecutive_failures      integer      default 0                   not null,
 
