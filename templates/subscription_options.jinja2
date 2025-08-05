@@ -3,36 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Subscription options</title>
+    <link rel="stylesheet" href="/static/styles.css">
     <style>
-        body {
-            text-align: center;
-            font-family: Calibri, sans-serif;
-        }
-        h1 {
-            padding-top: 200px;
-        }
-        form {
-            font-size: 18pt;
-        }
-        b {
-            font-size: 20pt;
-        }
+
     </style>
 </head>
 <body>
-    <b>Choose how often you would like to receive updates from {{ blog_name }}</b><br>
-    <b>You currently receive updates up to once per {{ interval }} days</b>
-    <form action="/update_interval" method="post">
-        <input type="hidden" name="sub_id" value="{{ sub_id }}">
-        <input type="hidden" name="code" value="{{ code }}">
-        {% for option in options %}
-            <label>
-                <input type="radio" name="interval" value="{{ option['value'] }}">
-                {{ option['text'] }}
-            </label>
-            <br>
-        {% endfor %}
-        <input type="submit" value="Update">
-    </form>
+    <div class="preferences">
+        <b>Choose how often you would like to receive updates from {{ blog_name }}</b><br>
+        <b>You currently receive updates up to once per {{ interval }} days</b>
+        <form action="/update_interval" method="post">
+            <input type="hidden" name="sub_id" value="{{ sub_id }}">
+            <input type="hidden" name="code" value="{{ code }}">
+            {% for option in options %}
+                <label>
+                    <input type="radio" name="interval" value="{{ option['value'] }}">
+                    {{ option['text'] }}
+                </label>
+                <br>
+            {% endfor %}
+            <input type="submit" value="Update">
+        </form>
+    </div>
 </body>
 </html>

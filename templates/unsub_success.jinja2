@@ -3,18 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Unsubscribed</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Calibri, sans-serif;
-        }
-        h1 {
-            padding-top: 200px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>You've successfully unsubscribed from {{ feed_name }}</h1>
-    <p>You will no longer receive notifications at {{ email }}</p>
+    <div class="center-info">
+        <h1>You've successfully unsubscribed from {{ feed_name }}</h1>
+        <p>You will no longer receive notifications at {{ email }}</p>
+    </div>
 </body>
 </html>

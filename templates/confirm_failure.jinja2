@@ -3,19 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Signup confirmation</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Calibri, sans-serif;
-        }
-        h1 {
-            padding-top: 200px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Error!</h1>
-    <p>Your signup confirmation has failed :(</p>
-    <p>{{ error_explanation }}</p>
+    <div class="center-info">
+        <h1>Error!</h1>
+        <p>Your signup confirmation has failed :(</p>
+        <p>{{ error_explanation }}</p>
+    </div>
 </body>
 </html>

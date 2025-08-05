@@ -2,6 +2,7 @@ from datetime import timedelta
 from email_validator import EmailUndeliverableError
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
 from db import update_db, engine
 from utils import (add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode,
@@ -15,6 +16,7 @@ conn.commit()
 conn.close()
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 

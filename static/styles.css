@@ -1,0 +1,21 @@
+.center-info {
+    text-align: center;
+    font-family: Calibri, sans-serif;
+}
+
+.center-info h1 {
+    padding-top: 200px;
+}
+
+.preferences {
+    text-align: center;
+    font-family: Calibri, sans-serif;
+}
+
+.preferences form {
+    font-size: 18pt;
+}
+
+.preferences b {
+    font-size: 20pt;
+}

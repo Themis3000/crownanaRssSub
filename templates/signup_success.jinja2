@@ -3,19 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Signup confirmation</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Calibri, sans-serif;
-        }
-        h1 {
-            padding-top: 200px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Signup confirmation has been sent!</h1>
-    <p>A signup confirmation has been sent to your email at {{ email }}</p>
-    <p>After signup, you will be notified every about new posts up to once every {{ period }} days</p>
+    <div class="center-info">
+        <h1>Signup confirmation has been sent!</h1>
+        <p>A signup confirmation has been sent to your email at {{ email }}</p>
+        <p>After signup, you will be notified every about new posts up to once every {{ period }} days</p>
+    </div>
 </body>
 </html>
