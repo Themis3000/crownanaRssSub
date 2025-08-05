@@ -7,7 +7,7 @@ from rss import get_posts
 from functools import lru_cache
 from email_service import email_serv
 import time
-from utils import store_posts
+from utils import store_posts, base_url
 
 
 def do_work():
@@ -89,4 +89,11 @@ def send_mail_notification(sub: find_notify_mark_updating_subsRow, post_history:
     with QueryManager() as q:
         q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=post_history[-1].history_id)
 
-    email_serv.notify_update(to_addr=sub.email, posts=post_history, blog_name=sub.feed_name)
+    update_link = f"{base_url}/unsubscribe?sub_id={sub.subscriber_id}&code={sub.confirmation_code}",
+    unsub_link = f"{base_url}/notification_options?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
+
+    email_serv.notify_update(to_addr=sub.email,
+                             posts=post_history,
+                             blog_name=sub.feed_name,
+                             update_link=update_link,
+                             unsub_link=unsub_link)

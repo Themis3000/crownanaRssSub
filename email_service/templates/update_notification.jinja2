@@ -29,8 +29,11 @@
         {% endfor %}
     </div>
     <footer>
-        <p class="unsub">This email was sent to you because you subscribed to {{ blog_name }} email updates.
-            Click <a href="">here</a> if you wish to unsubscribe</p>
+        <p class="unsub">
+            This email was sent to you because you subscribed to {{ blog_name }} email updates. If you would no longer
+            like these messages, you may <a href="{{ unsub_link }}">unsubscribe from updates</a> or
+            <a href="{{ update_link }}">update how often you receive emails from this site</a>
+        </p>
         <p class="advert">Email updates provided for {{ blog_name }} by crownana rss email services</p>
     </footer>
 </body>

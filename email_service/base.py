@@ -24,8 +24,9 @@ class BaseEmail(ABC):
         email_info = validate_email(to_addr, dns_resolver=resolver)
         self.send_email(to_addr=email_info.normalized, subject=subject, content=content)
 
-    def notify_update(self, to_addr: str, posts: List[FeedHistory], blog_name: str):
-        email_content = update_template.render(posts=posts, blog_name=blog_name)
+    def notify_update(self, to_addr: str, posts: List[FeedHistory], blog_name: str, unsub_link: str, update_link: str):
+        email_content = update_template.render(posts=posts, blog_name=blog_name, unsub_link=unsub_link,
+                                               update_link=update_link)
         self.validate_and_send(to_addr=to_addr,
                                subject=f"New post on {blog_name}!",
                                content=email_content)

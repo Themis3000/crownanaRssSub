@@ -1,6 +1,6 @@
 # Work in progress!
 
-This is not completed yet. Come back later.
+Nearly completed, but not yet there. Will have a public instance hosted soon for small site owners & a docker image for those who want to run their own.
 
 # Crownana rss subscription service
 
