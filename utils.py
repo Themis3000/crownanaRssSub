@@ -60,7 +60,7 @@ class InvalidSubscriber(Exception):
     pass
 
 
-def validate_subscriber(q: Querier, subscriber_id: int, confirmation_code: int) -> Subscription:
+def validate_subscriber(q: Querier, subscriber_id: int, confirmation_code: float) -> Subscription:
     subscriber = q.get_subscriber(subscriber_id=subscriber_id)
     if subscriber is None:
         raise InvalidSubscriber()
@@ -69,12 +69,12 @@ def validate_subscriber(q: Querier, subscriber_id: int, confirmation_code: int) 
     return subscriber
 
 
-def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: int) -> Subscription:
+def confirm_subscription(q: Querier, subscriber_id: int, confirmation_code: float) -> Subscription:
     validate_subscriber(q=q, subscriber_id=subscriber_id, confirmation_code=confirmation_code)
     return q.confirm_subscription(subscriber_id=subscriber_id)
 
 
-def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int) -> Tuple[Subscription, Feed]:
+def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: float) -> Tuple[Subscription, Feed]:
     subscriber = validate_subscriber(q=q, subscriber_id=subscriber_id, confirmation_code=confirmation_code)
     blog = q.get_feed(feed_id=subscriber.feed_id)
     q.remove_subscription(subscriber_id=subscriber_id)
@@ -82,7 +82,7 @@ def remove_subscription(q: Querier, subscriber_id: int, confirmation_code: int) 
     return subscriber, blog
 
 
-def update_sub_interval(q: Querier, subscriber_id: int, confirmation_code: int, interval: timedelta) -> Subscription:
+def update_sub_interval(q: Querier, subscriber_id: int, confirmation_code: float, interval: timedelta) -> Subscription:
     subscriber = validate_subscriber(q=q, subscriber_id=subscriber_id, confirmation_code=confirmation_code)
     q.sub_update_interval(subscriber_id=subscriber_id, notification_interval=interval)
     return subscriber

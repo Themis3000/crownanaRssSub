@@ -71,8 +71,6 @@ def confirm_sub(sub_id: int, code: float, request: Request):
 def unsub(sub_id: int, code: float, request: Request):
     with QueryManager() as q:
         try:
-            # See if I can get sqlc to consider this param as a float in the generated code.
-            # noinspection PyTypeChecker
             sub, feed = remove_subscription(q=q, subscriber_id=sub_id, confirmation_code=code)
         except InvalidSubscriber:
             return templates.TemplateResponse(request=request,
