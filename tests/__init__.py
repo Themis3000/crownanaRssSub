@@ -4,7 +4,7 @@ import unittest
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
 from utils import validate_and_add_feed, add_subscriber, confirm_subscription, remove_subscription, \
-    InvalidConfirmationCode, InvalidSubscriber
+    InvalidConfirmationCode, InvalidSubscriber, update_sub_interval
 from rss import get_posts
 from multiprocessing import Process
 import email.utils
@@ -312,3 +312,13 @@ class RssTests(unittest.TestCase):
             "nowait@test.com": {"signup_confirm": 3, "post_notification": 0},
         }
         self.assertEqual(email_stats_expectation, email_stats)
+
+    def test_update_sub_interval(self):
+        with QueryManager() as q:
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+            new_interval = sub.notification_interval + datetime.timedelta(hours=1)
+            update_sub_interval(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code,
+                                interval=new_interval)
+            updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+            self.assertEqual(new_interval, updated_sub.notification_interval)

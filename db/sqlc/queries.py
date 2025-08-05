@@ -223,6 +223,13 @@ WHERE subscriber_id = :p1
 """
 
 
+SUB_UPDATE_INTERVAL = """-- name: sub_update_interval \\:exec
+UPDATE subscriptions
+    SET notification_interval = :p2
+WHERE subscriber_id = :p1
+"""
+
+
 SUBSCRIBER_EXISTS = """-- name: subscriber_exists \\:one
 SELECT exists(SELECT subscriber_id, feed_id, subscription_time, confirmation_code, email, signup_confirmed, last_post_notify, has_notification_pending, last_notification_time, notification_interval, next_notification, is_being_processed, last_process_update FROM subscriptions WHERE subscriber_id = :p1) AS sub_exists
 """
@@ -463,6 +470,9 @@ class Querier:
 
     def sub_notify_now(self, *, subscriber_id: int) -> None:
         self._conn.execute(sqlalchemy.text(SUB_NOTIFY_NOW), {"p1": subscriber_id})
+
+    def sub_update_interval(self, *, subscriber_id: int, notification_interval: datetime.timedelta) -> None:
+        self._conn.execute(sqlalchemy.text(SUB_UPDATE_INTERVAL), {"p1": subscriber_id, "p2": notification_interval})
 
     def subscriber_exists(self, *, subscriber_id: int) -> Optional[bool]:
         row = self._conn.execute(sqlalchemy.text(SUBSCRIBER_EXISTS), {"p1": subscriber_id}).first()

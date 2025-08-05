@@ -140,3 +140,8 @@ SELECT EXISTS(
     SELECT FROM feed_history
     WHERE feed_id = $1 AND unique_id = $2
 );
+
+-- name: sub_update_interval :exec
+UPDATE subscriptions
+    SET notification_interval = $2
+WHERE subscriber_id = $1;
