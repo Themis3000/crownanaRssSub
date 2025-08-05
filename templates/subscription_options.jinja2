@@ -22,7 +22,7 @@
 <body>
     <b>Choose how often you would like to receive updates from {{ blog_name }}</b><br>
     <b>You currently receive updates up to once per {{ interval }} days</b>
-    <form action="/update_interval">
+    <form action="/update_interval" method="post">
         <input type="hidden" name="sub_id" value="{{ sub_id }}">
         <input type="hidden" name="code" value="{{ code }}">
         {% for option in options %}

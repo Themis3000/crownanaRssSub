@@ -116,6 +116,28 @@ def notification_options(sub_id: int, code: float, request: Request):
                                       })
 
 
+@app.post("/update_interval")
+def update_interval(sub_id: Annotated[int, Form()], code: Annotated[float, Form()], interval: Annotated[str, Form()],
+                    request: Request):
+    td_interval = timedelta(days=int(interval[:-1]))
+    with QueryManager() as q:
+        try:
+            sub = update_sub_interval(q=q, subscriber_id=sub_id, confirmation_code=code, interval=td_interval)
+        except InvalidSubscriber:
+            return templates.TemplateResponse(request=request,
+                                              name="options_no_access.jinja2",
+                                              context={"error_explanation": "Invalid subscriber id provided."})
+        except InvalidConfirmationCode:
+            return templates.TemplateResponse(request=request,
+                                              name="options_no_access.jinja2",
+                                              context={"error_explanation": "Invalid confirmation code provided."})
+
+    return templates.TemplateResponse(request=request,
+                                      name="options_update_success.jinja2",
+                                      context={"email": sub.email,
+                                               "interval": td_interval.days})
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8005)
