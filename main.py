@@ -4,7 +4,8 @@ from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from db import update_db, engine
-from utils import add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode, remove_subscription
+from utils import (add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode,
+                   remove_subscription, update_sub_interval, validate_subscriber)
 from db import QueryManager
 from typing import Annotated
 
@@ -84,6 +85,35 @@ def unsub(sub_id: int, code: float, request: Request):
     return templates.TemplateResponse(request=request,
                                       name="unsub_success.jinja2",
                                       context={"email": sub.email, "feed_name": feed.feed_name})
+
+
+@app.get("/notification_options")
+def notification_options(sub_id: int, code: float, request: Request):
+    with QueryManager() as q:
+        try:
+            sub = validate_subscriber(q=q, subscriber_id=sub_id, confirmation_code=code)
+        except InvalidSubscriber:
+            return templates.TemplateResponse(request=request,
+                                              name="options_no_access.jinja2",
+                                              context={"error_explanation": "Invalid subscriber id provided."})
+        except InvalidConfirmationCode:
+            return templates.TemplateResponse(request=request,
+                                              name="options_no_access.jinja2",
+                                              context={"error_explanation": "Invalid confirmation code provided."})
+        feed = q.get_feed(feed_id=sub.feed_id)
+
+    return templates.TemplateResponse(request=request,
+                                      name="subscription_options.jinja2",
+                                      context={
+                                          "blog_name": feed.feed_name,
+                                          "interval": sub.notification_interval.days,
+                                          "sub_id": sub.subscriber_id,
+                                          "code": sub.confirmation_code,
+                                          "options": [{"text": "1 day", "value": "1d"},
+                                                      {"text": "3 days", "value": "3d"},
+                                                      {"text": "7 days", "value": "7d"},
+                                                      {"text": "30 days", "value": "30d"}]
+                                      })
 
 
 if __name__ == "__main__":

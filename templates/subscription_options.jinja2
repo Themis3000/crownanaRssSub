@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Subscription options</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Calibri, sans-serif;
+        }
+        h1 {
+            padding-top: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Choose how often you would like to receive updates from {{ blog_name }}</h1>
+    <h3>You currently receive updates up to once per {{ interval }} days</h3>
+    <form action="/update_interval">
+        <input type="hidden" name="sub_id" value="{{ sub_id }}">
+        <input type="hidden" name="code" value="{{ code }}">
+        {% for option in options %}
+            <label>
+                <input type="radio" value="{{ option['value'] }}">
+                {{ option['text'] }}
+            </label>
+            <br>
+        {% endfor %}
+        <input type="submit" value="Update">
+    </form>
+</body>
+</html>
