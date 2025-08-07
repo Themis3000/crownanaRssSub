@@ -54,3 +54,54 @@ h1, h2, h3, h4, h5, h6 {
     background-color: lightcoral;
     border: red solid medium;
 }
+
+.writing-style {
+    font-family: "Comic Sans MS", monospace;
+    font-size: 16pt;
+    width: 900px;
+    margin: auto;
+    padding-top: 20px;
+    padding-bottom: 200px;
+}
+
+.writing-style h1 {
+    text-align: center;
+    padding: 25px;
+    color: #062aa9;
+}
+
+.writing-style h2 {
+    text-align: center;
+    padding: 25px;
+    color: #062aa9;
+}
+
+.writing-style h3 {
+    text-align: center;
+    padding: 15px;
+    color: #062aa9;
+}
+
+.writing-style h4 {
+    text-align: center;
+    padding: 15px;
+    color: #062aa9;
+}
+
+.image-showcase {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    text-align: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.writing-style > img {
+    width: 800px;
+    height: auto;
+    padding: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}

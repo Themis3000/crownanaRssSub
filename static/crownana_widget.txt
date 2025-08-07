@@ -34,6 +34,7 @@
 
 <style>
     #email-signup-wrapper {
+        /* Put your own image here! */
         background-image: url("/static/images/waves.jpg");
         display: inline-block;
         border-radius: 10px;

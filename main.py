@@ -3,6 +3,7 @@ from email_validator import EmailUndeliverableError, EmailSyntaxError
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from sqlalchemy.exc import IntegrityError
 from db import update_db, engine
 from utils import (add_subscriber, confirm_subscription, InvalidSubscriber, InvalidConfirmationCode,
@@ -18,6 +19,15 @@ conn.close()
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+with open("./static/home.html", "r") as f:
+    landing_html = f.read()
+
+
+@app.get("/")
+def get_home():
+    return HTMLResponse(content=landing_html, status_code=200)
 
 
 @app.post("/signup")
