@@ -10,6 +10,7 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     font-family: Calibri, sans-serif;
+    font-size: 16pt;
 }
 
 img, picture, video, canvas, svg {
@@ -31,15 +32,18 @@ h1, h2, h3, h4, h5, h6 {
 
 .center-info {
     text-align: center;
-}
-
-.center-info h1 {
-    padding-top: 200px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .preferences {
     text-align: center;
     font-family: Calibri, sans-serif;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .preferences form {
@@ -48,4 +52,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .preferences b {
     font-size: 20pt;
+}
+
+.error-text {
+    background-color: lightcoral;
+    border: red solid medium;
 }
