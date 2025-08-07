@@ -1,0 +1,56 @@
+<div id="email-signup-wrapper">
+    <form action="http://localhost:8005/signup" method="post" target="_blank" id="email-signup">
+        <!-- Change the value field to your rss feed url -->
+        <input type="hidden" name="rss_url" value="https://www.crownanabread.com/blog/rss.xml">
+        Sign up for email notifications!
+        <br>
+        <label>
+            <input type="text" name="email" placeholder="Email" required>
+        </label>
+        <br>
+        Notify me up to once every:
+        <br>
+        <label>
+            <!-- Feel free to update the values/labels to reflect whichever update periods you'd like to offer. -->
+            <input type="radio" name="notification_period" value="1d" required>
+            1 day
+        </label>
+        <label>
+            <input type="radio" name="notification_period" value="3d" required>
+            3 days
+        </label>
+        <label>
+            <input type="radio" name="notification_period" value="7d" required>
+            7 days
+        </label>
+        <label>
+            <input type="radio" name="notification_period" value="30d" required>
+            30 days
+        </label>
+        <br>
+        <input type="submit" value="Sign up!">
+    </form>
+</div>
+
+<style>
+    #email-signup-wrapper {
+        background-image: url("/static/images/waves.jpg");
+        display: inline-block;
+        border-radius: 10px;
+        border: #c800cf outset 7px;
+        margin: 0;
+        font-family: Calibri, serif;
+        font-size: 18px;
+        color: white;
+        text-shadow: black 1px 1px 2px;
+        text-align: center;
+    }
+    #email-signup {
+        display: inherit;
+        padding: 5px;
+        margin: 0;
+    }
+    #email-signup input[type=submit], #email-signup input[type=text] {
+        width: 100%;
+    }
+</style>

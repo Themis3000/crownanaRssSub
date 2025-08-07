@@ -1,5 +1,5 @@
 from datetime import timedelta
-from email_validator import EmailUndeliverableError
+from email_validator import EmailUndeliverableError, EmailSyntaxError
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -35,10 +35,10 @@ def register_sub(rss_url: Annotated[str, Form()], email: Annotated[str, Form()],
                                           context={"error_explanation": "You're already signed up for notifications "
                                                                         "from this site!"},
                                           status_code=400)
-    except EmailUndeliverableError:
+    except (EmailUndeliverableError, EmailSyntaxError):
         return templates.TemplateResponse(request=request,
                                           name="signup_failure.jinja2",
-                                          context={"error_explanation": f"The email you submitted {email} seems to "
+                                          context={"error_explanation": f"The email you submitted ({email}) seems to "
                                                                         f"be invalid."},
                                           status_code=400)
     return templates.TemplateResponse(request=request,
