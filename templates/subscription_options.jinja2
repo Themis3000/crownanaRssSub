@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="preferences">
-        <b>Choose how often you would like to receive updates from {{ blog_name }}</b><br>
+        <h2>How often would you like to receive updates from {{ blog_name }}?</h2><br>
         <b>You currently receive updates up to once per {{ interval }} days</b>
         <form action="/update_interval" method="post">
             <input type="hidden" name="sub_id" value="{{ sub_id }}">

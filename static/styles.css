@@ -40,7 +40,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .preferences {
     text-align: center;
-    font-family: Calibri, sans-serif;
+    position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -48,10 +48,6 @@ h1, h2, h3, h4, h5, h6 {
 
 .preferences form {
     font-size: 18pt;
-}
-
-.preferences b {
-    font-size: 20pt;
 }
 
 .error-text {
