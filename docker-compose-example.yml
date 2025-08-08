@@ -1,0 +1,28 @@
+version: "3.2"
+
+services:
+  database:
+    image: postgres:17
+    volumes:
+      - ./.data:/var/lib/
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=user
+      - POSTGRES_DB=db
+
+  rss:
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8000"
+    depends_on:
+      - database
+    environment:
+      - host=database
+      - database=db
+      - user=user
+      - password=password
+      - port=5432
+      - base_url=http://your-site.com
+      - from_addr=notify@rss.your-site.com
+      - mailgun_api=asjv9348t0ejgvo---BigLongAPIKey---0324895oeg
