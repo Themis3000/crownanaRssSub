@@ -1,6 +1,8 @@
-# Work in progress!
+# Still doing some cleaning up here!
 
-Nearly completed, but not yet there. Will have a public instance hosted soon for small site owners & a docker image for those who want to run their own.
+This project is functional, but not quite completed yet! Still some things to dust here and there.
+
+You can run try it out on your own by running the example docker compose if you wish.
 
 # Crownana rss subscription service
 
