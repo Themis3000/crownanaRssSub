@@ -4,11 +4,11 @@ services:
   database:
     image: postgres:17
     volumes:
-      - ./.data:/var/lib/
+      - ./.data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=user
-      - POSTGRES_DB=db
+      - POSTGRES_PASSWORD=(FILL IN RANDOM PASSWORD)
+      - POSTGRES_USER=rssuser
+      - POSTGRES_DB=rss
     restart: always
 
   rss:
@@ -21,11 +21,11 @@ services:
     restart: always
     environment:
       - host=database
-      - database=db
-      - user=user
-      - password=password
+      - database=rss
+      - user=rssuser
+      - password=(FILL IN RANDOM PASSWORD)
       - port=5432
-      - base_url=http://your-site.com
-      - from_addr=notify@rss.your-site.com
-      - service_name=your-service-name
-      - mailgun_api=asjv9348t0ejgvo---BigLongAPIKey---0324895oeg
+      - base_url=(http://your-site.com) (No trailing slash)
+      - from_addr=notify@rss.your-site.com (Domain must be set up in mailgun)
+      - service_name=your-service-name (Will be displayed in the footer of emails)
+      - mailgun_api=asjv9348t0ejgvo---BigLongAPIKey---0324895oeg (api key specific to your domain)
