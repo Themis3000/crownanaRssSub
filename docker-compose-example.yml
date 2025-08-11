@@ -9,6 +9,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=user
       - POSTGRES_DB=db
+    restart: always
 
   rss:
     build:
@@ -17,6 +18,7 @@ services:
       - "8006:8000"
     depends_on:
       - database
+    restart: always
     environment:
       - host=database
       - database=db
@@ -25,4 +27,5 @@ services:
       - port=5432
       - base_url=http://your-site.com
       - from_addr=notify@rss.your-site.com
+      - service_name=your-service-name
       - mailgun_api=asjv9348t0ejgvo---BigLongAPIKey---0324895oeg
