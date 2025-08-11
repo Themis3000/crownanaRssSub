@@ -15,7 +15,7 @@ services:
     build:
       dockerfile: Dockerfile
     ports:
-      - "8006:8000"
+      - "80:8000"
     depends_on:
       - database
     restart: always
