@@ -1,7 +1,4 @@
-- Get a docker container going
 - Fill out how to self-host section
-- Get a live instance going
-- Make an easy way to remove crownana branding (or replace it?)
-- Add to self-host section on how to do custom templates
 - Make youtube video about how to do it.
+- Find some way to remove feeds with no subs
 - Unsubscribe without notification on bounce (is this needed? does my email provider do this for me?)
