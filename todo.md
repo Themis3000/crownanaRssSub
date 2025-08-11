@@ -1,4 +1,3 @@
-- Fill out how to self-host section
 - Make youtube video about how to do it.
 - Find some way to remove feeds with no subs
 - Unsubscribe without notification on bounce (is this needed? does my email provider do this for me?)
