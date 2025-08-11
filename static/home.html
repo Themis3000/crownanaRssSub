@@ -45,7 +45,37 @@
             road.</p>
 
         <h3>How to host on your own</h3>
-        <p>Prefer to run it on your own? (fill in instructions to run on your own)</p>
+        <p>
+            Prefer to run it on your own? You can grab the source code from
+            <a href="https://github.com/Themis3000/crownanaRssSub">github.com/Themis3000/crownanaRssSub</a>
+            <br><br>
+            I use mailgun as my email service provider (which provides 100 free emails a day). If you prefer not to use
+            another email service provider, it's quite easy to adapt the program to sending emails via any other method
+            too if you have some programming experience!
+            <br><br>
+            Here's the instructions for a linux system:
+        </p>
+        <ol>
+            <li>Set up an account on mailgun and get an api key (and connect your domain, if you want)</li>
+            <li>Install <code>docker</code> and <code>docker compose</code></li>
+            <li>Create and <code>cd</code> into a directory you would like install the server into</li>
+            <li>Run <code>git clone https://github.com/Themis3000/crownanaRssSub.git .</code></li>
+            <li>Create your docker compose configuration
+                <ol>
+                    <li>Copy the example compose file with <code>cp ./docker-compose-example.yml ./docker-compose.yml</code></li>
+                    <li>Edit the compose file with <code>nano ./docker-compose.yml</code></li>
+                    <li>Fill in a database password. Make sure you use the same one in both places!</li>
+                    <li>Fill in the url of the domain you will be hosting your rss feed site on</li>
+                    <li>Fill in the email address you'll be sending from</li>
+                    <li>Fill in your "service name". This will be displayed in the footer of emails</li>
+                    <li>Fill in your mailgun api key</li>
+                </ol>
+            </li>
+            <li>Run <code>docker compose up -d</code> to start it up</li>
+            <li>Visit http://localhost to verify that it's running correctly. At this point it should fully
+                function!</li>
+            <li>When you want to shut it down, run <code>docker compose down</code></li>
+        </ol>
     </div>
 </body>
 </html>
