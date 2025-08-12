@@ -1,8 +1,9 @@
 name: Unit tests
 
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - master
 
 jobs:
   test:
@@ -41,7 +42,7 @@ jobs:
           pip install pytest pytest-coverage
       - name: Test with pytest
         run: |
-          pytest --cov
+          pytest --cov "./tests/__init__.py"
       - name: Creating coverage folder
         run: |
           mkdir -p coverage

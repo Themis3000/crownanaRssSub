@@ -40,7 +40,7 @@ def set_mapping(name, location):
     requests.post(f"http://127.0.0.1:8010/set_mapping?name={name}&location={location}")
 
 
-def test_endpoint() -> bool:
+def do_endpoint_test() -> bool:
     try:
         res = requests.get("http://127.0.0.1:8010/")
     except Exception:
