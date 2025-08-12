@@ -3,6 +3,8 @@ Tests the underlying dependencies of the worker and http server
 """
 
 import datetime
+import time
+
 import email_validator
 import unittest
 import sqlalchemy
@@ -23,9 +25,11 @@ class RssTests(unittest.TestCase):
     def setUpClass(cls):
         cls.http_process = Process(target=start_http)
         cls.http_process.start()
-        if not do_endpoint_test():
-            if not do_endpoint_test():
-                raise Exception("Http server didn't start")
+        for i in range(20):
+            if do_endpoint_test():
+                return
+            time.sleep(1)
+        raise Exception("Http server didn't start")
 
     @classmethod
     def tearDownClass(cls):
