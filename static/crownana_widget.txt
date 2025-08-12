@@ -1,5 +1,5 @@
 <div id="email-signup-wrapper">
-    <form action="http://localhost:8005/signup" method="post" target="_blank" id="email-signup">
+    <form action="https://rss.crownanabread.com/signup" method="post" target="_blank" id="email-signup">
         <!-- Change the value field to your rss feed url -->
         <input type="hidden" name="rss_url" value="https://www.crownanabread.com/blog/rss.xml">
         Sign up for email notifications!
