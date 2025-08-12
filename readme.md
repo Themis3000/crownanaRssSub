@@ -1,5 +1,7 @@
 # Crownana rss subscription service
 
+![coverage badge](https://github.com/Themis3000/crownanaRssSub/blob/coverage-badge/coverage.svg)
+
 Years ago, Google took down their free service that allowed blog site operators to turn their rss feeds into easy email subscriptions via a widget.
 
 This is my replacement solution. Made for my own site crownanabread.com, but available for anyone running a small personal blog to use. (made for use on the indeweb)
