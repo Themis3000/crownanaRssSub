@@ -148,8 +148,3 @@ def update_interval(sub_id: Annotated[int, Form()], code: Annotated[float, Form(
                                       name="options_update_success.jinja2",
                                       context={"email": sub.email,
                                                "interval": td_interval.days})
-
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="127.0.0.1", port=8005)
