@@ -5,7 +5,7 @@ from db.sqlc.models import FeedHistory
 from db.sqlc.queries import find_notify_mark_updating_subsRow
 from rss import get_posts
 from functools import lru_cache
-from email_service import email_serv
+from email_service import email_notification_handler
 import time
 from utils import store_posts, base_url
 
@@ -92,8 +92,8 @@ def send_mail_notification(sub: find_notify_mark_updating_subsRow, post_history:
     update_link = f"{base_url}/unsubscribe?sub_id={sub.subscriber_id}&code={sub.confirmation_code}",
     unsub_link = f"{base_url}/notification_options?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
 
-    email_serv.notify_update(to_addr=sub.email,
-                             posts=post_history,
-                             blog_name=sub.feed_name,
-                             update_link=update_link,
-                             unsub_link=unsub_link)
+    email_notification_handler.notify_update(to_addr=sub.email,
+                                             posts=post_history,
+                                             blog_name=sub.feed_name,
+                                             update_link=update_link,
+                                             unsub_link=unsub_link)

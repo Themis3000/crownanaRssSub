@@ -1,9 +1,3 @@
-import os
-from .base import BaseEmail
-from .mailgun import Mailgun
-from .mock import MockEmail
+from email_service.email_notification_handler import email_notification_handler_builder
 
-if os.environ.get("testing") == "true":
-    email_serv = MockEmail()
-else:
-    email_serv = Mailgun()
+email_notification_handler = email_notification_handler_builder()

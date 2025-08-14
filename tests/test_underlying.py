@@ -4,7 +4,6 @@ Tests the underlying dependencies of the worker and http server
 
 import datetime
 import time
-
 import email_validator
 import unittest
 import sqlalchemy
@@ -15,9 +14,13 @@ from rss import get_posts
 from multiprocessing import Process
 import email.utils
 from db import QueryManager, engine, setup_db
-from email_service import email_serv, MockEmail
+from email_service import email_notification_handler
+from email_service.email_senders.mock import MockEmailSender
 from worker import do_feed_job, do_mail_jobs
 from .testing_utils.testing_http_server import start_http, set_mapping, clear_mappings, do_endpoint_test
+
+if not isinstance(email_notification_handler.email_sender, MockEmailSender):
+    raise Exception("Mock email sender not enabled! (is the environment variable testing=true set?)")
 
 
 class RssTests(unittest.TestCase):
@@ -48,7 +51,7 @@ class RssTests(unittest.TestCase):
         setup_db(conn)
         conn.commit()
         conn.close()
-        email_serv.clear_logs()
+        email_notification_handler.email_sender.clear_logs()
         clear_mappings()
 
     def test_get_all_feed1_posts(self):
@@ -138,11 +141,11 @@ class RssTests(unittest.TestCase):
             self.assertRaises(IntegrityError, add_feed)
 
     def add_subscriber(self):
-        self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
+        self.assertIsInstance(email_notification_handler, MockEmailSender, "The email service is not in testing mode!")
         with QueryManager() as q:
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            sub_email = email_serv.email_log[0]
-            sub_email_call = email_serv.logged_calls[0]
+            sub_email = email_notification_handler.email_log[0]
+            sub_email_call = email_notification_handler.logged_calls[0]
             self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
             confirm_url = f"http://127.0.0.1:8080/sub_confirm?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
             self.assertEqual(sub_email_call['confirm_url'], confirm_url)
@@ -175,7 +178,7 @@ class RssTests(unittest.TestCase):
             sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
             self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
             remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
-            unsub_email = email_serv.email_log[1]
+            unsub_email = email_notification_handler.email_sender.email_log[1]
             self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
             self.assertEqual(unsub_email.to, "test@test.com")
             self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
@@ -242,9 +245,9 @@ class RssTests(unittest.TestCase):
         job_completed = do_mail_jobs()
         self.assertTrue(job_completed)
 
-        notification_call = email_serv.logged_calls[-1]
-        self.assertEqual("test@test.com", notification_call["to_addr"])
-        self.assertEqual("Creative flash photos", notification_call["posts"][0].title)
+        logged_email = email_notification_handler.email_sender.email_log[-1]
+        self.assertEqual("test@test.com", logged_email.to)
+        self.assertIn("Creative flash photos", logged_email.content)
 
         job_completed = do_mail_jobs()
         self.assertFalse(job_completed)
@@ -300,7 +303,7 @@ class RssTests(unittest.TestCase):
                          + ["nomail@test.com", "nowait@test.com"])
         email_stats = {test_email: {"signup_confirm": 0, "post_notification": 0} for test_email in all_emails}
 
-        for sent_email in email_serv.email_log:
+        for sent_email in email_notification_handler.email_sender.email_log:
             if sent_email.subject.startswith("New post on "):
                 email_stats[sent_email.to]["post_notification"] += 1
                 continue

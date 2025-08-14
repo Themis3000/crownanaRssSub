@@ -1,4 +1,4 @@
-from .base import BaseEmail
+from .base import EmailSender
 from dataclasses import dataclass
 from typing import List
 
@@ -10,10 +10,9 @@ class LoggedEmail:
     content: str
 
 
-class MockEmail(BaseEmail):
+class MockEmailSender(EmailSender):
     def __init__(self):
         self.email_log: List[LoggedEmail] = []
-        self.logged_calls = []
 
     def send_email(self, to_addr: str, subject: str, content: str):
         self.email_log.append(LoggedEmail(to=to_addr, subject=subject, content=content))
@@ -26,18 +25,5 @@ class MockEmail(BaseEmail):
         """
         print(email_message)
 
-    def notify_subscribe(self, **kwargs):
-        self.logged_calls.append(kwargs)
-        super().notify_subscribe(**kwargs)
-
-    def notify_update(self, **kwargs):
-        self.logged_calls.append(kwargs)
-        super().notify_update(**kwargs)
-
-    def notify_unsubscribe(self, **kwargs):
-        self.logged_calls.append(kwargs)
-        super().notify_unsubscribe(**kwargs)
-
     def clear_logs(self):
         self.email_log = []
-        self.logged_calls = []
