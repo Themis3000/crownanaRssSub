@@ -52,4 +52,5 @@ def email_notification_handler_builder() -> EmailNotificationHandler:
     auth = os.environ.get('mailgun_api')
     if auth is None:
         raise Exception("Environment variable 'mailgun_api' is not set, and testing mode is not enabled!")
+
     return EmailNotificationHandler(email_sender=Mailgun(api_key=auth, from_addr=from_addr))
