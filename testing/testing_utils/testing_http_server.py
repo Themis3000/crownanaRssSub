@@ -16,7 +16,7 @@ def start_http():
     def read_file(file_name: str):
         if file_name in mappings:
             file_name = mappings[file_name]
-        with open(f"./tests/test_feeds/{file_name}", "r", encoding="utf-8") as f:
+        with open(f"./testing/test_feeds/{file_name}", "r", encoding="utf-8") as f:
             return Response(f.read(), media_type="application/xml")
 
     @app.post("/set_mapping")

@@ -17,7 +17,7 @@ from db import QueryManager, engine, setup_db
 from email_service import email_notification_handler
 from email_service.email_senders.mock import MockEmailSender
 from worker import do_feed_job, do_mail_jobs
-from .testing_utils.testing_http_server import start_http, set_mapping, clear_mappings, do_endpoint_test
+from testing.testing_utils.testing_http_server import start_http, set_mapping, clear_mappings, do_endpoint_test
 
 if not isinstance(email_notification_handler.email_sender, MockEmailSender):
     raise Exception("Mock email sender not enabled! (is the environment variable testing=true set?)")
