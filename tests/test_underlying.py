@@ -140,18 +140,18 @@ class RssTests(unittest.TestCase):
     def add_subscriber(self):
         self.assertIsInstance(email_serv, MockEmail, "The email service is not in testing mode!")
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             sub_email = email_serv.email_log[0]
             sub_email_call = email_serv.logged_calls[0]
             self.assertEqual(sub_email_call['blog_name'], "Crownanabread Blog")
             confirm_url = f"http://127.0.0.1:8080/sub_confirm?sub_id={sub.subscriber_id}&code={sub.confirmation_code}"
             self.assertEqual(sub_email_call['confirm_url'], confirm_url)
             self.assertEqual(sub_email.subject, "Confirm your subscription to Crownanabread Blog")
-            self.assertEqual(sub_email.to, "test@test.com")
+            self.assertEqual(sub_email.to, "test@gmail.com")
 
     def test_confirm_subscription(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             self.assertFalse(sub.signup_confirmed)
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
@@ -160,29 +160,29 @@ class RssTests(unittest.TestCase):
     def test_forbid_double_subscription(self):
         with QueryManager() as q:
             def subscribe():
-                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+                add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
 
             subscribe()
             self.assertRaises(IntegrityError, subscribe)
         with QueryManager() as q:
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@test.com")
-            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@test.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test@gmail.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed2.xml", sub_email="test1@gmail.com")
+            add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test1@gmail.com")
 
     def test_unsubscribe(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             self.assertTrue(q.subscriber_exists(subscriber_id=sub.subscriber_id))
             remove_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             unsub_email = email_serv.email_log[1]
             self.assertEqual(unsub_email.subject, "Crownanabread Blog unsubscribe confirmation")
-            self.assertEqual(unsub_email.to, "test@test.com")
+            self.assertEqual(unsub_email.to, "test@gmail.com")
             self.assertFalse(q.subscriber_exists(subscriber_id=sub.subscriber_id))
 
     def test_invalid_unsubscribe(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
 
         with QueryManager() as q:
             invalid_code = sub.confirmation_code + 0.001
@@ -206,7 +206,7 @@ class RssTests(unittest.TestCase):
 
     def test_worker_feed_job(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
         did_job = do_feed_job()
         self.assertFalse(did_job)
@@ -225,7 +225,7 @@ class RssTests(unittest.TestCase):
 
     def test_worker_mail_job(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
         set_mapping("feed1.xml", "feed1_updated.xml")
         with QueryManager() as q:
@@ -243,7 +243,7 @@ class RssTests(unittest.TestCase):
         self.assertTrue(job_completed)
 
         notification_call = email_serv.logged_calls[-1]
-        self.assertEqual("test@test.com", notification_call["to_addr"])
+        self.assertEqual("test@gmail.com", notification_call["to_addr"])
         self.assertEqual("Creative flash photos", notification_call["posts"][0].title)
 
         job_completed = do_mail_jobs()
@@ -256,9 +256,9 @@ class RssTests(unittest.TestCase):
 
     # Need to add test for multiple updates in single batch.
     def test_worker_multi_mail_job(self):
-        subscribers_feed_1 = ["test@test.com", "test1@test.com", "test2@test.com", "test3@test.com", "test4@test.com"]
-        subscribers_feed_2 = ["test5@test.com", "test2@test.com", "test6@test.com", "test7@test.com", "test1@test.com"]
-        subscribers_feed_3 = ["test5@test.com", "test2@test.com", "test8@test.com", "test9@test.com", "test10@test.com"]
+        subscribers_feed_1 = ["test@gmail.com", "test1@gmail.com", "test2@gmail.com", "test3@gmail.com", "test4@gmail.com"]
+        subscribers_feed_2 = ["test5@gmail.com", "test2@gmail.com", "test6@gmail.com", "test7@gmail.com", "test1@gmail.com"]
+        subscribers_feed_3 = ["test5@gmail.com", "test2@gmail.com", "test8@gmail.com", "test9@gmail.com", "test10@gmail.com"]
         feed_plan = [{"rss": "http://127.0.0.1:8010/feed1.xml", "subs": subscribers_feed_1},
                      {"rss": "http://127.0.0.1:8010/feed2.xml", "subs": subscribers_feed_2},
                      {"rss": "http://127.0.0.1:8010/feed3.xml", "subs": subscribers_feed_3}]
@@ -270,16 +270,16 @@ class RssTests(unittest.TestCase):
                     confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
                     q.sub_notify_now(subscriber_id=sub.subscriber_id)
                 # Add one that won't ever have its subscription confirmed to test if it'll get updates.
-                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@test.com")
+                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nomail@gmail.com")
                 q.sub_notify_now(subscriber_id=sub.subscriber_id)
                 # Add one that is confirmed but not ready for notification
-                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nowait@test.com")
+                sub, feed = add_subscriber(q=q, rss_url=plan["rss"], sub_email="nowait@gmail.com")
                 confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
 
                 q.feed_update_now(rss_url=plan["rss"])
 
             # Add a feed that won't receive an update
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed4.xml", sub_email="nomail@gmail.com")
             q.sub_notify_now(subscriber_id=sub.subscriber_id)
             q.feed_update_now(rss_url="http://127.0.0.1:8010/feed4.xml")
 
@@ -297,7 +297,7 @@ class RssTests(unittest.TestCase):
         self.assertFalse(do_mail_jobs())
 
         all_emails = set(subscribers_feed_1 + subscribers_feed_2 + subscribers_feed_3
-                         + ["nomail@test.com", "nowait@test.com"])
+                         + ["nomail@gmail.com", "nowait@gmail.com"])
         email_stats = {test_email: {"signup_confirm": 0, "post_notification": 0} for test_email in all_emails}
 
         for sent_email in email_serv.email_log:
@@ -310,25 +310,25 @@ class RssTests(unittest.TestCase):
             raise Exception("Unexpected email found")
 
         email_stats_expectation = {
-            "nomail@test.com": {"signup_confirm": 4, "post_notification": 0},
-            "test@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test1@test.com": {"signup_confirm": 2, "post_notification": 2},
-            "test2@test.com": {"signup_confirm": 3, "post_notification": 3},
-            "test3@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test4@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test5@test.com": {"signup_confirm": 2, "post_notification": 2},
-            "test6@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test7@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test8@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test9@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "test10@test.com": {"signup_confirm": 1, "post_notification": 1},
-            "nowait@test.com": {"signup_confirm": 3, "post_notification": 0},
+            "nomail@gmail.com": {"signup_confirm": 4, "post_notification": 0},
+            "test@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test1@gmail.com": {"signup_confirm": 2, "post_notification": 2},
+            "test2@gmail.com": {"signup_confirm": 3, "post_notification": 3},
+            "test3@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test4@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test5@gmail.com": {"signup_confirm": 2, "post_notification": 2},
+            "test6@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test7@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test8@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test9@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "test10@gmail.com": {"signup_confirm": 1, "post_notification": 1},
+            "nowait@gmail.com": {"signup_confirm": 3, "post_notification": 0},
         }
         self.assertEqual(email_stats_expectation, email_stats)
 
     def test_update_sub_interval(self):
         with QueryManager() as q:
-            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@test.com")
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
             confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
             new_interval = sub.notification_interval + datetime.timedelta(hours=1)
             update_sub_interval(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code,
