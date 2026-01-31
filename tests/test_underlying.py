@@ -335,3 +335,21 @@ class RssTests(unittest.TestCase):
                                 interval=new_interval)
             updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
             self.assertEqual(new_interval, updated_sub.notification_interval)
+
+    def test_title_update(self):
+        """
+        Tests updating the title of an item, without updating the pub date while no other unique identifier is present
+        """
+        with QueryManager() as q:
+            sub, feed = add_subscriber(q=q, rss_url="http://127.0.0.1:8010/feed1.xml", sub_email="test@gmail.com")
+            confirm_subscription(q=q, subscriber_id=sub.subscriber_id, confirmation_code=sub.confirmation_code)
+
+        set_mapping("feed1.xml", "feed1_title_change.xml")
+        with QueryManager() as q:
+            q.feed_update_now(rss_url="http://127.0.0.1:8010/feed1.xml")
+
+        do_feed_job()
+
+        with QueryManager() as q:
+            updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
+            self.assertFalse(updated_sub.has_notification_pending)

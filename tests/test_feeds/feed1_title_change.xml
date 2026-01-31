@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+    <title>Crownanabread Blog</title>
+    <link>https://crownanabread.com</link>
+    <description>The crownanabread personal blog</description>
+
+        <item>
+            <title>Blog updates - but the title is changed and the pubdate isn't changed.</title>
+            <link>https://crownanabread.com/blog/posts/blog_updates.html</link>
+            <description>I over engineered my own blog system - view the full blog post at https://crownanabread.com/blog/posts/blog_updates.html</description>
+            <pubDate>Mon, 30 Jun 2025 23:00:00 -0600</pubDate>
+        </item>
+
+        <item>
+            <title>Using photos in Freecad</title>
+            <link>https://crownanabread.com/blog/posts/using_photos_in_freecad.html</link>
+            <description>In this tutorial I explain how to take quality photos, adjust for distortion and size, and use them to aide modeling in Freecad. I go over a basic example where I replicate a difficult to model curve and 3d print a functional piece with it. - view the full blog post at https://crownanabread.com/blog/posts/using_photos_in_freecad.html</description>
+            <pubDate>Mon, 02 Jun 2025 23:00:00 -0600</pubDate>
+        </item>
+
+        <item>
+            <title>A new start!</title>
+            <link>https://crownanabread.com/blog/posts/a_new_start!.html</link>
+            <description>My first post, explaining how this site is a fresh start for me in terms of internet presence and what inspired me to start this website. - view the full blog post at https://crownanabread.com/blog/posts/a_new_start!.html</description>
+            <pubDate>Tue, 27 May 2025 23:00:00 -0600</pubDate>
+        </item>
+
+</channel>
+</rss>
