@@ -88,7 +88,7 @@ def get_posts(rss_url: str, last_id: str = None, last_date: datetime = None) -> 
         except AttributeError:
             raise RssInvalid("RSS missing attributes")
 
-        if last_date > post.get_datetime():
+        if last_date >= post.get_datetime():
             break
         if post.post_id == last_id:  # Just in case the most recent post had its pub time changed (edits made to it?)
             break
