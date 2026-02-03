@@ -364,6 +364,7 @@ class RssTests(unittest.TestCase):
         with QueryManager() as q:
             q._conn.execute(sqlalchemy.text(query))
 
-        with QueryManager() as q:
-            test_sub = q.get_subscriber(subscriber_id=1)
-            self.assertEqual(test_sub.email, "user5@gmail.com", "test data is not loaded")
+        did_jobs = do_mail_jobs()
+        self.assertTrue(did_jobs)
+        emails_sent = len(email_serv.email_log)
+        self.assertEqual(emails_sent, 5)
