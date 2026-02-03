@@ -353,3 +353,17 @@ class RssTests(unittest.TestCase):
         with QueryManager() as q:
             updated_sub = q.get_subscriber(subscriber_id=sub.subscriber_id)
             self.assertFalse(updated_sub.has_notification_pending)
+
+    def test_stuck_db(self):
+        """
+        I ran into an issue where notifications totally freeze up. This loads the database state that experiences the
+         problem, and tests if the issue is still present
+        """
+        with open("./tests/db_dumps/stuck_notification_state.sql") as f:
+            query = f.read()
+        with QueryManager() as q:
+            q._conn.execute(sqlalchemy.text(query))
+
+        with QueryManager() as q:
+            test_sub = q.get_subscriber(subscriber_id=1)
+            self.assertEqual(test_sub.email, "user5@gmail.com", "test data is not loaded")
