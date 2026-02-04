@@ -1,3 +1,5 @@
+- Create test that starts from the db snapshot, but the "last notify" and "last process" are set at the current time. Keep stepping it back by one day (or advance the db clock, is that possible?) to make sure it's sending the proper amount of notifications for each person 
+
 Known bugs:
 - If a user signs up and waits until after a new post has been made to confirm their email, they'll be notified of all posts made since signup *only after* a new post has been made after email confirmation. Example: user signs up on the 8th, 3 new posts are made, then the user confirms their email on the 15th. On the 25th a new post is made. The user now receives and email with all 4 posts at once. (rare edge-case)
 
