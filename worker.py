@@ -84,6 +84,7 @@ def send_mail_notification(sub: find_notify_mark_updating_subsRow, post_history:
             q.mark_subscriber_notified(subscriber_id=sub.subscriber_id, last_post_notify=sub.last_post_notify)
         return
 
+    post_history.sort(key=lambda history: history.post_date)
     # I'm marking notified before sending the email. If it fails it's not that big of a deal.
     # I'd rather things fail open in this way.
     with QueryManager() as q:
