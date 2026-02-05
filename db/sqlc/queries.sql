@@ -145,3 +145,8 @@ SELECT EXISTS(
 UPDATE subscriptions
     SET notification_interval = $2
 WHERE subscriber_id = $1;
+
+-- name: add_time_to_all_last_notification :exec
+UPDATE subscriptions
+    SET last_notification_time = last_notification_time + sqlc.arg(timedelta)::interval,
+        last_process_update = last_process_update + sqlc.arg(timedelta)::interval;

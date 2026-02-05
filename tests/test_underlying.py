@@ -368,3 +368,30 @@ class RssTests(unittest.TestCase):
         self.assertTrue(did_jobs)
         emails_sent = len(email_serv.email_log)
         self.assertEqual(emails_sent, 5)
+
+    def test_stuck_db_passing_time(self):
+        """
+        An iteration of test_stuck_db, except time passing is simulated to make sure notification emails go out at the
+        right times, and that last_post_notify is updated correctly
+        """
+        with open("./tests/db_dumps/stuck_notification_state_current_time.sql") as f:
+            query = f.read()
+        with QueryManager() as q:
+            q._conn.execute(sqlalchemy.text(query))
+
+        expected_sent_per_day = [0, 3, 3, 3, 3, 3, 3, 5, 5, 5]
+        with QueryManager() as q:
+            q.add_time_to_all_last_notification(timedelta=datetime.timedelta(hours=-12))
+
+        for expected_on_day in expected_sent_per_day:
+            emails_sent = len(email_serv.email_log)
+            self.assertEqual(expected_on_day, emails_sent)
+            with QueryManager() as q:
+                q.add_time_to_all_last_notification(timedelta=datetime.timedelta(days=-1))
+            do_mail_jobs()
+
+        with QueryManager() as q:
+            subs = [q.get_subscriber(subscriber_id=i) for i in range(1, 6)]
+
+        for sub in subs:
+            self.assertEqual(14, sub.last_post_notify)
